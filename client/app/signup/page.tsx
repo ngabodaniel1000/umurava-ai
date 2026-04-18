@@ -34,6 +34,18 @@ export default function SignupPage() {
         setLoading(true);
         setError('');
 
+        if (formData.password.length < 6) {
+            setError('Password must be at least 6 characters long');
+            setLoading(false);
+            return;
+        }
+
+        if (formData.password.length > 30) {
+            setError('Password must be no more than 30 characters long');
+            setLoading(false);
+            return;
+        }
+
         try {
             await api.post('/users', formData);
             router.push('/dashboard');

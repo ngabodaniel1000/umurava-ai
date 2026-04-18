@@ -27,8 +27,10 @@ app.use(cookieParser());
 
 // Enable CORS
 app.use(cors({
-    origin: ['http://localhost:3000', 'https://umurava.ai'],
-    credentials: true
+    origin: true,  // ✅ This works with credentials
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Cookie']
 }));
 
 // Dev logging middleware
