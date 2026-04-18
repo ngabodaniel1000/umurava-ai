@@ -4,12 +4,13 @@ const Job = require('../models/jobModel');
 // @route   POST /api/jobs
 // @access  Private
 const createJob = async (req, res) => {
-    const { title, description, requirements, salaryRange, location, department } = req.body;
+    const { title, description, skillsNeeded, experience, salaryRange, location, department } = req.body;
 
     const job = new Job({
         title,
         description,
-        requirements,
+        skillsNeeded,
+        experience,
         salaryRange,
         location,
         department,
@@ -49,7 +50,7 @@ const getJobById = async (req, res) => {
 // @route   PUT /api/jobs/:id
 // @access  Private
 const updateJob = async (req, res) => {
-    const { title, description, requirements, salaryRange, location, department } = req.body;
+    const { title, description, skillsNeeded, experience, salaryRange, location, department } = req.body;
 
     const job = await Job.findById(req.params.id);
 
@@ -61,7 +62,8 @@ const updateJob = async (req, res) => {
 
         job.title = title || job.title;
         job.description = description || job.description;
-        job.requirements = requirements || job.requirements;
+        job.skillsNeeded = skillsNeeded || job.skillsNeeded;
+        job.experience = experience || job.experience;
         job.salaryRange = salaryRange || job.salaryRange;
         job.location = location || job.location;
         job.department = department || job.department;

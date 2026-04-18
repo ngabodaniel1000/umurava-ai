@@ -23,7 +23,7 @@ export function ScreeningWizard({ jobTitle, candidateName, onComplete }: Screeni
     },
     {
       title: 'Matching Skills',
-      description: 'Comparing candidate skills with job requirements...',
+      description: 'Comparing candidate skills with job skills needed...',
     },
     {
       title: 'Scoring Experience',
@@ -80,13 +80,12 @@ export function ScreeningWizard({ jobTitle, candidateName, onComplete }: Screeni
           {steps.map((step, index) => (
             <div
               key={index}
-              className={`p-4 rounded-lg border ${
-                index < currentStep
+              className={`p-4 rounded-lg border ${index < currentStep
                   ? 'bg-green-500/10 border-green-500/30'
                   : index === currentStep
-                  ? 'bg-accent/10 border-accent/50'
-                  : 'bg-muted border-border'
-              }`}
+                    ? 'bg-accent/10 border-accent/50'
+                    : 'bg-muted border-border'
+                }`}
             >
               <div className="flex items-center gap-3">
                 {index < currentStep ? (

@@ -135,7 +135,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-lg font-semibold text-foreground mb-2">Quality Candidates</h3>
               <p className="text-muted-foreground">
-                Filter and screen only the most qualified candidates tailored to your job requirements.
+                Filter and screen only the most qualified candidates tailored to your job skills needed.
               </p>
             </div>
 

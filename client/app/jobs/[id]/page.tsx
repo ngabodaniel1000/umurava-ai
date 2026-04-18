@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import { ArrowLeft, MapPin, Loader2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Loader2, Edit, Trash2 } from 'lucide-react';
 import api from '@/lib/api-client';
 
 export default function JobDetailPage() {
@@ -14,14 +14,19 @@ export default function JobDetailPage() {
   const router = useRouter();
   const jobId = params.id as string;
   const [job, setJob] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchJob = async () => {
+    const fetchJobAndUser = async () => {
       try {
-        const { data } = await api.get(`/jobs/${jobId}`);
-        setJob(data);
+        const [jobRes, userRes] = await Promise.all([
+          api.get(`/jobs/${jobId}`),
+          api.get('/users/profile')
+        ]);
+        setJob(jobRes.data);
+        setCurrentUser(userRes.data);
       } catch (err: any) {
         setError(err.response?.data?.message || 'Failed to fetch job details');
       } finally {
@@ -29,8 +34,23 @@ export default function JobDetailPage() {
       }
     };
 
-    if (jobId && jobId !== 'undefined') fetchJob();
+    if (jobId && jobId !== 'undefined') fetchJobAndUser();
   }, [jobId]);
+
+  const handleDeleteJob = async () => {
+    if (!window.confirm('Are you sure you want to delete this job? This action cannot be undone.')) return;
+
+    try {
+      await api.delete(`/jobs/${jobId}`);
+      router.push('/jobs');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to delete job');
+    }
+  };
+
+  const isOwner = currentUser && job && (
+    (typeof job.recruiter === 'object' ? job.recruiter._id === currentUser._id : job.recruiter === currentUser._id)
+  );
 
   if (loading) {
     return (
@@ -95,6 +115,15 @@ export default function JobDetailPage() {
                     </div>
                   </div>
                 )}
+                <div className="flex items-start gap-3">
+                  <div className="p-2 rounded-lg bg-accent/10">
+                    <span className="text-xl font-bold text-accent">📅</span>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-1">Experience</p>
+                    <p className="font-bold text-foreground">{job.experience}</p>
+                  </div>
+                </div>
               </div>
 
               <div className="mb-10">
@@ -105,12 +134,12 @@ export default function JobDetailPage() {
               </div>
 
               <div>
-                <h2 className="text-xl font-bold text-foreground mb-4">Key Requirements</h2>
+                <h2 className="text-xl font-bold text-foreground mb-4">Skills Needed</h2>
                 <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {job.requirements.map((req: string, index: number) => (
+                  {job.skillsNeeded.map((skill: string, index: number) => (
                     <li key={index} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border border-border/50">
                       <span className="text-accent mt-0.5 font-bold">✓</span>
-                      <span className="text-sm text-foreground/90">{req}</span>
+                      <span className="text-sm text-foreground/90">{skill}</span>
                     </li>
                   ))}
                 </ul>
@@ -151,6 +180,26 @@ export default function JobDetailPage() {
                 </Button>
               </Link>
             </div>
+
+            {isOwner && (
+              <div className="pt-6 border-t border-border space-y-3">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">Owner Actions</p>
+                <Link href={`/jobs/${job.id}/edit`} className="block">
+                  <Button variant="outline" className="w-full gap-2 border-border hover:bg-muted text-foreground font-semibold">
+                    <Edit className="w-4 h-4" />
+                    Edit Job
+                  </Button>
+                </Link>
+                <Button
+                  variant="destructive"
+                  className="w-full gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-semibold"
+                  onClick={handleDeleteJob}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete Job
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

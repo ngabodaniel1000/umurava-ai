@@ -2,7 +2,8 @@ export interface Job {
   id: string;
   title: string;
   description: string;
-  requirements: string[];
+  skillsNeeded: string[];
+  experience: string;
   salaryRange?: {
     min: number;
     max: number;

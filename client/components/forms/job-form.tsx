@@ -11,11 +11,13 @@ import { X, Plus } from 'lucide-react';
 
 interface JobFormProps {
   onSubmit: (data: JobFormData) => void;
+  initialData?: Partial<JobFormData> & { salaryMin?: number; salaryMax?: number };
+  mode?: 'create' | 'edit';
 }
 
-export function JobForm({ onSubmit }: JobFormProps) {
-  const [requirements, setRequirements] = useState<string[]>([]);
-  const [currentRequirement, setCurrentRequirement] = useState('');
+export function JobForm({ onSubmit, initialData, mode = 'create' }: JobFormProps) {
+  const [skillsNeeded, setSkillsNeeded] = useState<string[]>(initialData?.skillsNeeded || []);
+  const [currentSkill, setCurrentSkill] = useState('');
 
   const {
     register,
@@ -27,37 +29,46 @@ export function JobForm({ onSubmit }: JobFormProps) {
   } = useForm<JobFormData>({
     resolver: zodResolver(jobFormSchema),
     defaultValues: {
-      requirements: [],
+      title: initialData?.title || '',
+      description: initialData?.description || '',
+      experience: initialData?.experience || '',
+      location: initialData?.location || '',
+      department: initialData?.department || '',
+      salaryMin: initialData?.salaryMin,
+      salaryMax: initialData?.salaryMax,
+      skillsNeeded: initialData?.skillsNeeded || [],
     },
   });
 
-  const handleAddRequirement = () => {
-    if (currentRequirement.trim()) {
-      const newRequirements = [...requirements, currentRequirement];
-      setRequirements(newRequirements);
-      setValue('requirements', newRequirements, { shouldValidate: true });
-      setCurrentRequirement('');
+  const handleAddSkill = () => {
+    if (currentSkill.trim()) {
+      const newSkills = [...skillsNeeded, currentSkill];
+      setSkillsNeeded(newSkills);
+      setValue('skillsNeeded', newSkills, { shouldValidate: true });
+      setCurrentSkill('');
     }
   };
 
-  const handleRemoveRequirement = (index: number) => {
-    const newRequirements = requirements.filter((_, i) => i !== index);
-    setRequirements(newRequirements);
-    setValue('requirements', newRequirements, { shouldValidate: true });
+  const handleRemoveSkill = (index: number) => {
+    const newSkills = skillsNeeded.filter((_, i) => i !== index);
+    setSkillsNeeded(newSkills);
+    setValue('skillsNeeded', newSkills, { shouldValidate: true });
   };
 
   const handleFormSubmit = (data: JobFormData) => {
     onSubmit({
       ...data,
-      requirements,
+      skillsNeeded,
     });
     reset();
-    setRequirements([]);
+    setSkillsNeeded([]);
   };
 
   return (
     <Card className="p-8 bg-card border-border max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold text-foreground mb-6">Create New Job</h2>
+      <h2 className="text-2xl font-bold text-foreground mb-6">
+        {mode === 'edit' ? 'Edit Job' : 'Create New Job'}
+      </h2>
 
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
         {/* Job Title */}
@@ -87,6 +98,20 @@ export function JobForm({ onSubmit }: JobFormProps) {
             className="w-full bg-input border border-border text-foreground placeholder:text-muted-foreground rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-accent/50"
           />
           {errors.description && <p className="text-red-400 text-sm mt-1">{errors.description.message}</p>}
+        </div>
+
+        {/* Experience */}
+        <div>
+          <label htmlFor="experience" className="block text-sm font-medium text-foreground mb-2">
+            Experience Level *
+          </label>
+          <Input
+            id="experience"
+            placeholder="e.g., 3+ years, Mid-level, Senior"
+            {...register('experience')}
+            className="bg-input border-border text-foreground placeholder:text-muted-foreground"
+          />
+          {errors.experience && <p className="text-red-400 text-sm mt-1">{errors.experience.message}</p>}
         </div>
 
         {/* Location & Department */}
@@ -147,28 +172,28 @@ export function JobForm({ onSubmit }: JobFormProps) {
           </div>
         </div>
 
-        {/* Requirements */}
+        {/* Skills Needed */}
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
-            Key Requirements *
+            Skills Needed *
           </label>
           <div className="flex gap-2 mb-3">
             <Input
               type="text"
-              placeholder="e.g., React, TypeScript, 3+ years experience"
-              value={currentRequirement}
-              onChange={(e) => setCurrentRequirement(e.target.value)}
+              placeholder="e.g., React, TypeScript, Node.js"
+              value={currentSkill}
+              onChange={(e) => setCurrentSkill(e.target.value)}
               onKeyPress={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
-                  handleAddRequirement();
+                  handleAddSkill();
                 }
               }}
               className="bg-input border-border text-foreground placeholder:text-muted-foreground"
             />
             <Button
               type="button"
-              onClick={handleAddRequirement}
+              onClick={handleAddSkill}
               variant="outline"
               className="border-border hover:bg-muted"
             >
@@ -176,17 +201,17 @@ export function JobForm({ onSubmit }: JobFormProps) {
             </Button>
           </div>
 
-          {requirements.length > 0 && (
+          {skillsNeeded.length > 0 && (
             <div className="space-y-2">
-              {requirements.map((req, index) => (
+              {skillsNeeded.map((skill, index) => (
                 <div
                   key={index}
                   className="flex items-center justify-between bg-muted px-3 py-2 rounded-md"
                 >
-                  <span className="text-sm text-foreground">{req}</span>
+                  <span className="text-sm text-foreground">{skill}</span>
                   <button
                     type="button"
-                    onClick={() => handleRemoveRequirement(index)}
+                    onClick={() => handleRemoveSkill(index)}
                     className="text-muted-foreground hover:text-foreground"
                   >
                     <X className="w-4 h-4" />
@@ -195,8 +220,8 @@ export function JobForm({ onSubmit }: JobFormProps) {
               ))}
             </div>
           )}
-          {requirements.length === 0 && (
-            <p className="text-red-400 text-sm">Add at least one requirement</p>
+          {skillsNeeded.length === 0 && (
+            <p className="text-red-400 text-sm">Add at least one skill</p>
           )}
         </div>
 
@@ -205,7 +230,7 @@ export function JobForm({ onSubmit }: JobFormProps) {
           type="submit"
           className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold h-11"
         >
-          Create Job
+          {mode === 'edit' ? 'Save Changes' : 'Create Job'}
         </Button>
       </form>
     </Card>

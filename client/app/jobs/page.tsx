@@ -100,6 +100,9 @@ export default function JobsPage() {
                       <MapPin className="w-4 h-4" />
                       <span>{job.location}</span>
                     </div>
+                    <div className="flex items-center gap-2 font-medium text-accent">
+                      <span>Experience: {job.experience}</span>
+                    </div>
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4" />
                       <span>{new Date(job.createdAt).toLocaleDateString()}</span>

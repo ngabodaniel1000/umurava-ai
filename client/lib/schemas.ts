@@ -3,7 +3,8 @@ import { z } from 'zod';
 export const jobFormSchema = z.object({
   title: z.string().min(2, { message: 'Job title must be at least 2 characters' }),
   description: z.string().min(10, { message: 'Description must be at least 10 characters' }),
-  requirements: z.array(z.string().min(1)).min(1, { message: 'Add at least one requirement' }),
+  skillsNeeded: z.array(z.string().min(1)).min(1, { message: 'Add at least one skill' }),
+  experience: z.string().min(1, { message: 'Experience level is required' }),
   location: z.string().min(2, { message: 'Location is required' }),
   department: z.string().min(2, { message: 'Department is required' }),
   salaryMin: z.coerce.number().positive().optional(),

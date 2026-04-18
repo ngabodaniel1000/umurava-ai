@@ -116,7 +116,7 @@ export default function ScreeningPage() {
                     <div>
                       <p className="font-semibold text-foreground">Experience Level</p>
                       <p className="text-sm text-muted-foreground mt-1">
-                        6 years of experience meets and exceeds the 5+ year requirement.
+                        Candidate experience aligns well with the position skills needed.
                       </p>
                     </div>
                   </div>
@@ -126,11 +126,10 @@ export default function ScreeningPage() {
 
             {/* Sidebar */}
             <div className="space-y-6">
-              <Card className={`p-6 border ${
-                screeningResult.status === 'passed'
-                  ? 'bg-green-500/10 border-green-500/30'
-                  : 'bg-amber-500/10 border-amber-500/30'
-              }`}>
+              <Card className={`p-6 border ${screeningResult.status === 'passed'
+                ? 'bg-green-500/10 border-green-500/30'
+                : 'bg-amber-500/10 border-amber-500/30'
+                }`}>
                 <div className="flex items-center gap-2 mb-3">
                   {screeningResult.status === 'passed' ? (
                     <CheckCircle className="w-5 h-5 text-green-400" />

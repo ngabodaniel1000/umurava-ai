@@ -23,7 +23,8 @@ export default function NewJobPage() {
       const response = await api.post('/jobs', {
         title: data.title,
         description: data.description,
-        requirements: data.requirements,
+        skillsNeeded: data.skillsNeeded,
+        experience: data.experience,
         location: data.location,
         department: data.department,
         salaryRange: data.salaryMin || data.salaryMax ? {
