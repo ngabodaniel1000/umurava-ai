@@ -7,31 +7,36 @@ import { ChevronRight, CheckCircle2, Zap, BarChart3 } from 'lucide-react';
 
 interface ScreeningWizardProps {
   jobTitle: string;
-  candidateName: string;
+  candidateName?: string;
+  mode?: 'manual' | 'bulk';
   onComplete: (result: any) => void;
 }
 
-export function ScreeningWizard({ jobTitle, candidateName, onComplete }: ScreeningWizardProps) {
+export function ScreeningWizard({ jobTitle, candidateName = "Multiple Candidates", mode = 'bulk', onComplete }: ScreeningWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [matchPercentage, setMatchPercentage] = useState(0);
 
-  // Simulate screening steps
+  // Simulate screening steps for Scenario 2
   const steps = [
     {
-      title: 'Analyzing Resume',
-      description: 'Extracting skills and experience from resume...',
+      title: 'Parsing Documents',
+      description: 'Extracting skills and experience from unstructured CVs...',
+    },
+    {
+      title: 'Normalizing Data',
+      description: 'Transforming candidates into standardized profiles...',
     },
     {
       title: 'Matching Skills',
-      description: 'Comparing candidate skills with job skills needed...',
+      description: 'Comparing extracted skills with job requirements...',
     },
     {
-      title: 'Scoring Experience',
-      description: 'Evaluating years of experience and relevance...',
+      title: 'Scoring & Ranking',
+      description: 'Evaluating and ranking candidates by relevance...',
     },
     {
-      title: 'AI Scoring',
-      description: 'Running final AI scoring model...',
+      title: 'AI Generation',
+      description: 'Generating detailed insights and explanations...',
     },
   ];
 
@@ -69,7 +74,7 @@ export function ScreeningWizard({ jobTitle, candidateName, onComplete }: Screeni
           </div>
           <div className="w-full bg-muted rounded-full h-3">
             <div
-              className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-300"
+              className="bg-linear-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-300"
               style={{ width: `${matchPercentage}%` }}
             ></div>
           </div>
@@ -81,19 +86,19 @@ export function ScreeningWizard({ jobTitle, candidateName, onComplete }: Screeni
             <div
               key={index}
               className={`p-4 rounded-lg border ${index < currentStep
-                  ? 'bg-green-500/10 border-green-500/30'
-                  : index === currentStep
-                    ? 'bg-accent/10 border-accent/50'
-                    : 'bg-muted border-border'
+                ? 'bg-green-500/10 border-green-500/30'
+                : index === currentStep
+                  ? 'bg-accent/10 border-accent/50'
+                  : 'bg-muted border-border'
                 }`}
             >
               <div className="flex items-center gap-3">
                 {index < currentStep ? (
-                  <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" />
                 ) : index === currentStep ? (
-                  <Zap className="w-5 h-5 text-accent flex-shrink-0 animate-pulse" />
+                  <Zap className="w-5 h-5 text-accent shrink-0 animate-pulse" />
                 ) : (
-                  <div className="w-5 h-5 rounded-full border-2 border-border flex-shrink-0"></div>
+                  <div className="w-5 h-5 rounded-full border-2 border-border shrink-0"></div>
                 )}
                 <div className="flex-1">
                   <p className={`font-semibold ${index <= currentStep ? 'text-foreground' : 'text-muted-foreground'}`}>
@@ -111,7 +116,7 @@ export function ScreeningWizard({ jobTitle, candidateName, onComplete }: Screeni
 
   if (currentStep > steps.length) {
     return (
-      <Card className="p-8 bg-gradient-to-br from-green-500/10 via-background to-background border-green-500/30">
+      <Card className="p-8 bg-linear-to-br from-green-500/10 via-background to-background border-green-500/30">
         <div className="text-center">
           <CheckCircle2 className="w-16 h-16 text-green-400 mx-auto mb-4" />
           <h3 className="text-2xl font-bold text-foreground mb-2">Screening Complete!</h3>

@@ -3,16 +3,17 @@
 import { AppLayout } from '@/components/layout/app-layout';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ScreeningWizard } from '@/components/screening/screening-wizard';
+import { ArrowLeft, CheckCircle, AlertCircle, Target } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { ArrowLeft, CheckCircle, AlertCircle, Target } from 'lucide-react';
+import { ScreeningWizard } from '@/components/screening/screening-wizard';
 
 export default function ScreeningPage() {
   const params = useParams();
   const router = useRouter();
   const jobId = params.id as string;
   const [screeningResult, setScreeningResult] = useState<any>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Mock data
   const job = {
@@ -46,14 +47,14 @@ export default function ScreeningPage() {
             {/* Main Results */}
             <div className="col-span-2 space-y-6">
               {/* Score Card */}
-              <Card className="p-8 bg-gradient-to-br from-accent/20 to-background border-accent/30">
+              <Card className="p-8 bg-linear-to-br from-accent/20 to-background border-accent/30">
                 <div className="flex items-start justify-between mb-6">
                   <div>
                     <h1 className="text-3xl font-bold text-foreground">{screeningResult.candidateName}</h1>
                     <p className="text-muted-foreground mt-2">{screeningResult.jobTitle}</p>
                   </div>
                   <div className="text-center">
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-accent to-blue-600 flex items-center justify-center mx-auto mb-2">
+                    <div className="w-24 h-24 rounded-full bg-linear-to-br from-accent to-blue-600 flex items-center justify-center mx-auto mb-2">
                       <span className="text-4xl font-bold text-white">{screeningResult.score}</span>
                     </div>
                     <p className="text-sm text-muted-foreground">/10</p>
@@ -65,7 +66,7 @@ export default function ScreeningPage() {
                   <div className="flex items-center gap-3">
                     <div className="flex-1 bg-muted rounded-full h-3">
                       <div
-                        className="bg-gradient-to-r from-green-500 to-green-600 h-3 rounded-full"
+                        className="bg-linear-to-r from-green-500 to-green-600 h-3 rounded-full"
                         style={{ width: `${screeningResult.matchPercentage}%` }}
                       ></div>
                     </div>
@@ -99,7 +100,7 @@ export default function ScreeningPage() {
                 <h3 className="text-lg font-bold text-foreground mb-4">Analysis</h3>
                 <div className="space-y-4">
                   <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-accent/20 flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 rounded-lg bg-accent/20 flex items-center justify-center shrink-0">
                       <Target className="w-6 h-6 text-accent" />
                     </div>
                     <div>
@@ -110,7 +111,7 @@ export default function ScreeningPage() {
                     </div>
                   </div>
                   <div className="flex gap-4">
-                    <div className="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                    <div className="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center shrink-0">
                       <CheckCircle className="w-6 h-6 text-green-400" />
                     </div>
                     <div>
@@ -190,13 +191,31 @@ export default function ScreeningPage() {
               <p className="text-lg font-semibold text-foreground">{candidate.name}</p>
             </div>
           </div>
+
+          {!isProcessing && (
+            <div className="text-center">
+              <h3 className="text-xl font-bold text-foreground mb-2">Ready to Screen?</h3>
+              <p className="text-muted-foreground mb-6">
+                Analyze the selected candidate against the job requirements
+              </p>
+              <Button
+                className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold h-12 w-full max-w-sm mx-auto"
+                onClick={() => setIsProcessing(true)}
+              >
+                Start AI Screening
+              </Button>
+            </div>
+          )}
         </Card>
 
-        <ScreeningWizard
-          jobTitle={job.title}
-          candidateName={candidate.name}
-          onComplete={handleScreeningComplete}
-        />
+        {isProcessing && (
+          <ScreeningWizard
+            jobTitle={job.title}
+            candidateName={candidate.name}
+            mode="manual"
+            onComplete={handleScreeningComplete}
+          />
+        )}
       </div>
     </AppLayout>
   );

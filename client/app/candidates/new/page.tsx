@@ -58,7 +58,7 @@ export default function NewCandidatePage() {
   return (
     <AppLayout>
       <div className="p-8">
-        <div className="mb-8">
+        <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-foreground">Add Candidate</h1>
           <p className="text-muted-foreground mt-2">Create a new candidate profile</p>
         </div>

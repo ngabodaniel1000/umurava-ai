@@ -57,8 +57,8 @@ export function CandidateForm({ onSubmit, jobTitle }: CandidateFormProps) {
 
   return (
     <Card className="p-8 bg-card border-border max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold text-foreground mb-2">Add Candidate</h2>
-      {jobTitle && <p className="text-muted-foreground mb-6">for {jobTitle}</p>}
+      <h2 className="text-2xl font-bold text-foreground mb-2 text-center">Add Candidate</h2>
+      {jobTitle && <p className="text-muted-foreground mb-6 text-center">for {jobTitle}</p>}
 
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
         {/* Name */}

@@ -49,7 +49,7 @@ export default function HomePage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-b from-background to-muted/20 py-24 px-6">
+      <section className="bg-linear-to-b from-background to-muted/20 py-24 px-6">
         <div className="max-w-5xl mx-auto text-center">
           <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6 text-balance">
             AI-Powered Talent Screening Made Simple
@@ -162,7 +162,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-2 gap-12">
             <div className="space-y-6">
               <div className="flex gap-4">
-                <CheckCircle2 className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-6 h-6 text-accent shrink-0 mt-0.5" />
                 <div>
                   <h3 className="font-semibold text-foreground mb-2">Save 80% on Screening Time</h3>
                   <p className="text-muted-foreground">
@@ -172,7 +172,7 @@ export default function HomePage() {
               </div>
 
               <div className="flex gap-4">
-                <CheckCircle2 className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-6 h-6 text-accent shrink-0 mt-0.5" />
                 <div>
                   <h3 className="font-semibold text-foreground mb-2">Reduce Bad Hires by 60%</h3>
                   <p className="text-muted-foreground">
@@ -182,7 +182,7 @@ export default function HomePage() {
               </div>
 
               <div className="flex gap-4">
-                <CheckCircle2 className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-6 h-6 text-accent shrink-0 mt-0.5" />
                 <div>
                   <h3 className="font-semibold text-foreground mb-2">Fill Positions 3x Faster</h3>
                   <p className="text-muted-foreground">
@@ -194,7 +194,7 @@ export default function HomePage() {
 
             <div className="space-y-6">
               <div className="flex gap-4">
-                <CheckCircle2 className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-6 h-6 text-accent shrink-0 mt-0.5" />
                 <div>
                   <h3 className="font-semibold text-foreground mb-2">Zero Setup Required</h3>
                   <p className="text-muted-foreground">
@@ -204,7 +204,7 @@ export default function HomePage() {
               </div>
 
               <div className="flex gap-4">
-                <CheckCircle2 className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-6 h-6 text-accent shrink-0 mt-0.5" />
                 <div>
                   <h3 className="font-semibold text-foreground mb-2">Enterprise Security</h3>
                   <p className="text-muted-foreground">
@@ -214,7 +214,7 @@ export default function HomePage() {
               </div>
 
               <div className="flex gap-4">
-                <CheckCircle2 className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-6 h-6 text-accent shrink-0 mt-0.5" />
                 <div>
                   <h3 className="font-semibold text-foreground mb-2">24/7 Support Team</h3>
                   <p className="text-muted-foreground">
