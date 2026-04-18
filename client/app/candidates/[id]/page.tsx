@@ -134,43 +134,7 @@ export default function CandidateDetailPage() {
               </div>
             </Card>
 
-            {/* Documents & Source Files Section */}
-            <Card className="p-8 bg-card border-border">
-              <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-accent" />
-                Documents & Source Files
-              </h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex border border-border rounded-xl overflow-hidden bg-muted/30 group hover:border-accent/50 transition-all">
-                  <div className="w-16 bg-muted flex items-center justify-center border-r border-border">
-                    <FileText className="w-8 h-8 text-muted-foreground group-hover:text-accent transition-colors" />
-                  </div>
-                  <div className="p-4 flex-1">
-                    <p className="text-sm font-bold text-foreground truncate">{candidate.name.replace(' ', '_')}_Resume.pdf</p>
-                    <p className="text-xs text-muted-foreground mt-1">PDF Document • 2.4 MB</p>
-                    <div className="mt-3 flex gap-2">
-                      <Button variant="link" className="h-auto p-0 text-accent text-xs font-bold" asChild>
-                        <a href={candidate.resumeUrl} target="_blank">View File</a>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Simulated Excel Source if candidate was bulk uploaded */}
-                <div className="flex border border-border rounded-xl overflow-hidden bg-muted/30 group hover:border-accent/50 transition-all opacity-60">
-                  <div className="w-16 bg-muted flex items-center justify-center border-r border-border">
-                    <FileText className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <div className="p-4 flex-1">
-                    <p className="text-sm font-bold text-foreground truncate">External_Job_Board_Export.xlsx</p>
-                    <p className="text-xs text-muted-foreground mt-1">Excel Sheet • Source Data</p>
-                    <div className="mt-3 flex gap-2">
-                      <span className="text-[10px] bg-muted border border-border px-2 py-0.5 rounded text-muted-foreground">Linked Source</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Card>
           </div>
 
           {/* Sidebar */}
