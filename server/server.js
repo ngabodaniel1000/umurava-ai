@@ -27,7 +27,7 @@ app.use(cookieParser());
 
 // Enable CORS
 app.use(cors({
-    origin: [process.env.FRONTEND_URL],
+    origin: [process.env.FRONTEND_URL,"https://umurava-recruiter-ai.vercel.app"],
     credentials: true
 }));
 
