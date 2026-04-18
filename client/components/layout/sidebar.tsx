@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
@@ -13,13 +13,12 @@ import {
   ChevronRight,
   Sparkles,
   LogOut,
-  ChevronLeft,
-  ChevronRight as ChevronRightIcon,
   PanelLeftClose,
   PanelLeftOpen,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { useEffect, useState } from 'react';
 
 const navItems = [
   {
@@ -57,6 +56,21 @@ interface SidebarProps {
 
 export function Sidebar({ isCollapsed, onToggle, isMobile }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const userJson = localStorage.getItem('user');
+    if (userJson) {
+      setUser(JSON.parse(userJson));
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    router.push('/login');
+  };
 
   return (
     <aside className={cn(
@@ -130,30 +144,30 @@ export function Sidebar({ isCollapsed, onToggle, isMobile }: SidebarProps) {
           isCollapsed ? "justify-center" : ""
         )}>
           <Avatar className="h-10 w-10 border-2 border-accent/20 shrink-0">
-            <AvatarImage src="" />
-            <AvatarFallback className="bg-accent text-accent-foreground font-bold">D</AvatarFallback>
+            <AvatarImage src={user?.avatar || ''} />
+            <AvatarFallback className="bg-accent text-accent-foreground font-bold">
+              {user?.name?.[0] || 'U'}
+            </AvatarFallback>
           </Avatar>
           {!isCollapsed && (
             <div className="flex flex-col min-w-0">
-              <span className="text-sm font-semibold text-foreground truncate">Daniel Ngabo</span>
-              <span className="text-xs text-muted-foreground truncate">ngabodaniel1000@gmail.com</span>
+              <span className="text-sm font-semibold text-foreground truncate">{user?.name || 'User'}</span>
+              <span className="text-xs text-muted-foreground truncate">{user?.email || 'user@example.com'}</span>
             </div>
           )}
         </div>
-        <Link href="/login" className="w-full">
-          <Button
-            variant="ghost"
-            className={cn(
-              "w-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer",
-              isCollapsed ? "justify-center px-0" : "justify-start gap-3"
-            )}
-          >
-            <LogOut className="w-5 h-5 shrink-0" />
-            {!isCollapsed && <span>Log out</span>}
-          </Button>
-        </Link>
+        <Button
+          variant="ghost"
+          onClick={handleLogout}
+          className={cn(
+            "w-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer",
+            isCollapsed ? "justify-center px-0" : "justify-start gap-3"
+          )}
+        >
+          <LogOut className="w-5 h-5 shrink-0" />
+          {!isCollapsed && <span>Log out</span>}
+        </Button>
       </div>
     </aside>
   );
 }
-

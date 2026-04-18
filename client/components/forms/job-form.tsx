@@ -23,6 +23,7 @@ export function JobForm({ onSubmit }: JobFormProps) {
     formState: { errors },
     watch,
     reset,
+    setValue,
   } = useForm<JobFormData>({
     resolver: zodResolver(jobFormSchema),
     defaultValues: {
@@ -32,13 +33,17 @@ export function JobForm({ onSubmit }: JobFormProps) {
 
   const handleAddRequirement = () => {
     if (currentRequirement.trim()) {
-      setRequirements([...requirements, currentRequirement]);
+      const newRequirements = [...requirements, currentRequirement];
+      setRequirements(newRequirements);
+      setValue('requirements', newRequirements, { shouldValidate: true });
       setCurrentRequirement('');
     }
   };
 
   const handleRemoveRequirement = (index: number) => {
-    setRequirements(requirements.filter((_, i) => i !== index));
+    const newRequirements = requirements.filter((_, i) => i !== index);
+    setRequirements(newRequirements);
+    setValue('requirements', newRequirements, { shouldValidate: true });
   };
 
   const handleFormSubmit = (data: JobFormData) => {

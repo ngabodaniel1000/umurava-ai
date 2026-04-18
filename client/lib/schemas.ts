@@ -8,6 +8,14 @@ export const jobFormSchema = z.object({
   department: z.string().min(2, { message: 'Department is required' }),
   salaryMin: z.coerce.number().positive().optional(),
   salaryMax: z.coerce.number().positive().optional(),
+}).refine((data) => {
+  if (data.salaryMin && data.salaryMax) {
+    return data.salaryMax >= data.salaryMin;
+  }
+  return true;
+}, {
+  message: "Max salary must be greater than or equal to min salary",
+  path: ["salaryMax"],
 });
 
 export const candidateFormSchema = z.object({

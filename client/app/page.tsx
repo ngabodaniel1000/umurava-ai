@@ -36,7 +36,7 @@ export default function HomePage() {
             Discover the perfect candidates 10x faster. Umurava uses advanced AI to screen, score, and match top talent to your open positions.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/login">
+            <Link href="/signup">
               <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2">
                 Get Started <ArrowRight className="w-4 h-4" />
               </Button>
@@ -57,7 +57,7 @@ export default function HomePage() {
           <p className="text-center text-muted-foreground mb-16 max-w-2xl mx-auto">
             Everything you need to streamline your hiring process and find top talent faster.
           </p>
-          
+
           <div className="grid md:grid-cols-3 gap-8">
             <div className="bg-background rounded-lg p-8 border border-border hover:border-accent/50 transition-colors">
               <div className="w-12 h-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
@@ -128,7 +128,7 @@ export default function HomePage() {
           <h2 className="text-3xl md:text-4xl font-bold text-foreground text-center mb-16">
             Why Choose Umurava?
           </h2>
-          
+
           <div className="grid md:grid-cols-2 gap-12">
             <div className="space-y-6">
               <div className="flex gap-4">
@@ -230,7 +230,7 @@ export default function HomePage() {
           <p className="text-lg text-muted-foreground mb-8">
             Join thousands of companies using Umurava to find their next great hire.
           </p>
-          <Link href="/login">
+          <Link href="/signup">
             <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2">
               Start Your Free Trial <ArrowRight className="w-4 h-4" />
             </Button>

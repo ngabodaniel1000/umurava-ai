@@ -4,28 +4,57 @@ import { AppLayout } from '@/components/layout/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Mail, Phone, MapPin, BookOpen, Award } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Mail, Phone, MapPin, BookOpen, Award, Loader2 } from 'lucide-react';
+import api from '@/lib/api-client';
+import { Candidate } from '@/lib/types';
+import Link from 'next/link';
 
 export default function CandidateDetailPage() {
   const params = useParams();
   const router = useRouter();
   const candidateId = params.id as string;
+  const [candidate, setCandidate] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  // Mock candidate data
-  const candidate = {
-    id: candidateId,
-    name: 'Sarah Johnson',
-    email: 'sarah.johnson@example.com',
-    phone: '+1 (555) 123-4567',
-    experience: 6,
-    skills: ['React', 'TypeScript', 'Node.js', 'AWS', 'Docker', 'GraphQL'],
-    education: 'B.S. Computer Science',
-    appliedDate: '2024-03-20',
-    location: 'San Francisco, CA',
-    about:
-      'Experienced React developer with a passion for building scalable web applications. Strong background in full-stack development and cloud technologies.',
-    resumeUrl: 'https://example.com/resume-sarah-johnson.pdf',
-  };
+  useEffect(() => {
+    const fetchCandidate = async () => {
+      try {
+        const { data } = await api.get(`/candidates/${candidateId}`);
+        setCandidate(data);
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Failed to fetch candidate details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (candidateId) fetchCandidate();
+  }, [candidateId]);
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Loader2 className="w-10 h-10 text-accent animate-spin" />
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (error || !candidate) {
+    return (
+      <AppLayout>
+        <div className="p-8 text-center bg-destructive/10 border border-destructive/20 text-destructive rounded-lg m-8">
+          {error || 'Candidate not found'}
+          <div className="mt-4">
+            <Button onClick={() => router.back()}>Go Back</Button>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -73,15 +102,10 @@ export default function CandidateDetailPage() {
                 <div>
                   <div className="flex items-center gap-2 text-muted-foreground mb-1">
                     <MapPin className="w-4 h-4" />
-                    <p className="text-sm">Location</p>
+                    <p className="text-sm">Job</p>
                   </div>
-                  <p className="font-semibold text-foreground">{candidate.location}</p>
+                  <p className="font-semibold text-foreground">{candidate.job?.title || 'N/A'}</p>
                 </div>
-              </div>
-
-              <div className="mb-8">
-                <h2 className="text-xl font-bold text-foreground mb-4">About</h2>
-                <p className="text-foreground leading-relaxed">{candidate.about}</p>
               </div>
 
               <div className="mb-8">
@@ -90,7 +114,7 @@ export default function CandidateDetailPage() {
                   Skills
                 </h2>
                 <div className="flex flex-wrap gap-2">
-                  {candidate.skills.map((skill) => (
+                  {candidate.skills.map((skill: string) => (
                     <span
                       key={skill}
                       className="px-3 py-1 rounded-full bg-accent/20 text-accent text-sm font-medium"
@@ -118,7 +142,9 @@ export default function CandidateDetailPage() {
               <div className="space-y-3 text-sm">
                 <div>
                   <p className="text-muted-foreground mb-1">Applied</p>
-                  <p className="text-foreground font-medium">{candidate.appliedDate}</p>
+                  <p className="text-foreground font-medium">
+                    {new Date(candidate.appliedDate).toLocaleDateString()}
+                  </p>
                 </div>
                 <div>
                   <p className="text-muted-foreground mb-1">Experience</p>
@@ -138,9 +164,11 @@ export default function CandidateDetailPage() {
                   </a>
                 </Button>
               )}
-              <Button variant="outline" className="w-full border-border hover:bg-muted">
-                Screen Candidate
-              </Button>
+              <Link href={`/jobs/${candidate.job?._id}/screen`}>
+                <Button variant="outline" className="w-full border-border hover:bg-muted">
+                  Screen for {candidate.job?.title}
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

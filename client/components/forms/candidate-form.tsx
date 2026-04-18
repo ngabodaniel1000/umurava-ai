@@ -23,6 +23,7 @@ export function CandidateForm({ onSubmit, jobTitle }: CandidateFormProps) {
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
   } = useForm<CandidateFormData>({
     resolver: zodResolver(candidateFormSchema),
     defaultValues: {
@@ -32,13 +33,17 @@ export function CandidateForm({ onSubmit, jobTitle }: CandidateFormProps) {
 
   const handleAddSkill = () => {
     if (currentSkill.trim()) {
-      setSkills([...skills, currentSkill]);
+      const newSkills = [...skills, currentSkill];
+      setSkills(newSkills);
+      setValue('skills', newSkills, { shouldValidate: true });
       setCurrentSkill('');
     }
   };
 
   const handleRemoveSkill = (index: number) => {
-    setSkills(skills.filter((_, i) => i !== index));
+    const newSkills = skills.filter((_, i) => i !== index);
+    setSkills(newSkills);
+    setValue('skills', newSkills, { shouldValidate: true });
   };
 
   const handleFormSubmit = (data: CandidateFormData) => {

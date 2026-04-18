@@ -1,0 +1,44 @@
+const mongoose = require('mongoose');
+
+const jobSchema = mongoose.Schema(
+    {
+        title: {
+            type: String,
+            required: true,
+        },
+        description: {
+            type: String,
+            required: true,
+        },
+        requirements: {
+            type: [String],
+            required: true,
+        },
+        salaryRange: {
+            min: { type: Number },
+            max: { type: Number },
+        },
+        location: {
+            type: String,
+            required: true,
+        },
+        department: {
+            type: String,
+            required: true,
+        },
+        recruiter: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: true,
+        },
+    },
+    {
+        timestamps: true,
+        toJSON: { virtuals: true },
+        toObject: { virtuals: true },
+    }
+);
+
+const Job = mongoose.model('Job', jobSchema);
+
+module.exports = Job;

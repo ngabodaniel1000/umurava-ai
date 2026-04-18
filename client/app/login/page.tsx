@@ -8,17 +8,32 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
+import api from '@/lib/api-client';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simple navigation to dashboard (no real auth)
-    router.push('/dashboard');
+    setLoading(true);
+    setError('');
+
+    try {
+      const { data } = await api.post('/users/login', { email, password });
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data));
+      router.push('/dashboard');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
@@ -40,6 +55,11 @@ export default function LoginPage() {
         </div>
 
         <Card className="p-8 bg-card border border-border shadow-sm">
+          {error && (
+            <div className="mb-6 p-3 rounded bg-destructive/10 border border-destructive/20 text-destructive text-sm text-center">
+              {error}
+            </div>
+          )}
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium text-foreground">
@@ -51,6 +71,7 @@ export default function LoginPage() {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
                 className="bg-background border border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
@@ -65,6 +86,7 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
                 className="bg-background border border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
@@ -81,26 +103,25 @@ export default function LoginPage() {
 
             <Button
               type="submit"
+              disabled={loading}
               className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
             >
-              Sign In
+              {loading ? 'Signing In...' : 'Sign In'}
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            <span>Demo credentials: any email & password</span>
-          </div>
+
         </Card>
 
         <div className="mt-6 text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{' '}
-          <a href="#" className="text-accent hover:text-accent/80 transition-colors font-medium">
+          <Link href="/signup" className="text-accent hover:text-accent/80 transition-colors font-medium">
             Sign up
-          </a>
+          </Link>
         </div>
 
         <div className="mt-8 text-center text-xs text-muted-foreground">
-          <p>© 2024 Umurava. All rights reserved.</p>
+          <p>© 2026 Umurava. All rights reserved.</p>
         </div>
       </div>
     </div>

@@ -6,30 +6,41 @@ import { useRouter } from 'next/navigation';
 import { useScreening } from '@/lib/screening-context';
 import { type JobFormData } from '@/lib/schemas';
 
+import api from '@/lib/api-client';
+import { useState } from 'react';
+
 export default function NewJobPage() {
   const router = useRouter();
   const { setActiveJob } = useScreening();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (data: JobFormData) => {
-    // Create job
-    const newJob = {
-      id: String(Date.now()),
-      title: data.title,
-      description: data.description,
-      requirements: data.requirements,
-      location: data.location,
-      department: data.department,
-      salaryRange: data.salaryMin || data.salaryMax ? {
-        min: data.salaryMin || 0,
-        max: data.salaryMax || 0,
-      } : undefined,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+  const handleSubmit = async (data: JobFormData) => {
+    setLoading(true);
+    setError('');
 
-    setActiveJob(newJob);
-    router.push('/jobs');
+    try {
+      const response = await api.post('/jobs', {
+        title: data.title,
+        description: data.description,
+        requirements: data.requirements,
+        location: data.location,
+        department: data.department,
+        salaryRange: data.salaryMin || data.salaryMax ? {
+          min: data.salaryMin || 0,
+          max: data.salaryMax || 0,
+        } : undefined,
+      });
+
+      setActiveJob(response.data);
+      router.push('/jobs');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to create job');
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   return (
     <AppLayout>
