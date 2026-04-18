@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Header } from './header';
 import { Sidebar } from './sidebar';
+import { BottomNav } from './bottom-nav';
 import { cn } from '@/lib/utils';
 
 interface AppLayoutProps {
@@ -14,17 +15,10 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden relative">
-      {/* Sidebar Backdrop for Mobile */}
-      {!isCollapsed && (
-        <div
-          className="fixed inset-0 bg-black/40 z-40 md:hidden backdrop-blur-sm transition-opacity"
-          onClick={() => setIsCollapsed(true)}
-        />
-      )}
 
-      {/* Sidebar */}
+      {/* Sidebar – hidden on mobile, visible on md+ */}
       <div className={cn(
-        "transition-all duration-300 ease-in-out border-r border-border shrink-0",
+        "hidden md:block transition-all duration-300 ease-in-out border-r border-border shrink-0",
         isCollapsed ? "w-20" : "w-20 md:w-64"
       )}>
         <div className={cn(
@@ -37,10 +31,12 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto overflow-x-hidden pt-2 p-4 md:p-8">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden pt-2 p-4 pb-20 md:p-8 md:pb-8">
           {children}
         </main>
       </div>
+      {/* Mobile bottom navigation */}
+      <BottomNav />
     </div>
   );
 }
