@@ -15,8 +15,8 @@ const authUser = async (req, res) => {
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'development ' ? "Lax" : "none",
-            maxAge: 30 * 24 * 60 * 60 * 1000,
+            sameSite: process.env.NODE_ENV === 'development' ? "lax" : "none",
+            maxAge: 30 * 24 * 60 * 60 * 1000,   
         });
 
         res.json({
@@ -69,7 +69,7 @@ const registerUser = async (req, res) => {
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'development ' ? "Lax" : "none",
+            sameSite: process.env.NODE_ENV === 'development' ? "lax" : "none",
             maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
         });
 
