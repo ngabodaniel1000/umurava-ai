@@ -9,10 +9,10 @@ const {
 } = require('../controllers/jobController');
 const { protect, admin } = require('../middleware/authMiddleware');
 
-router.route('/').get(getJobs).post(protect, createJob);
+router.route('/').get(protect, getJobs).post(protect, createJob);
 router
     .route('/:id')
-    .get(getJobById)
+    .get(protect, getJobById)
     .put(protect, updateJob)
     .delete(protect, deleteJob);
 

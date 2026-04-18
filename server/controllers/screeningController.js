@@ -1,5 +1,6 @@
 const ScreeningResult = require('../models/screeningModel');
 const Candidate = require('../models/candidateModel');
+const Job = require('../models/jobModel');
 
 // @desc    Create screening result
 // @route   POST /api/screenings
@@ -26,8 +27,20 @@ const createScreeningResult = async (req, res) => {
 // @access  Private
 const getScreeningResults = async (req, res) => {
     const { jobId, candidateId } = req.query;
-    let filter = {};
-    if (jobId) filter.job = jobId;
+
+    // Find jobs owned by recruiter
+    const userJobs = await Job.find({ recruiter: req.user._id }).select('_id');
+    const userJobIds = userJobs.map(job => job._id.toString());
+
+    let filter = { job: { $in: userJobIds } };
+
+    if (jobId) {
+        if (!userJobIds.includes(jobId)) {
+            return res.status(401).json({ message: 'Not authorized for this job' });
+        }
+        filter.job = jobId;
+    }
+
     if (candidateId) filter.candidate = candidateId;
 
     const results = await ScreeningResult.find(filter)

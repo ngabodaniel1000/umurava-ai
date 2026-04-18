@@ -33,18 +33,7 @@ export default function SettingsPage() {
           theme: 'dark',
         });
       } catch (err: any) {
-        // Fallback to localStorage if API fails
-        const userJson = localStorage.getItem('user');
-        if (userJson) {
-          const user = JSON.parse(userJson);
-          setFormData({
-            fullName: user.name,
-            email: user.email,
-            companyName: user.company,
-            notifications: true,
-            theme: 'dark',
-          });
-        }
+        console.error('Failed to fetch profile', err);
       } finally {
         setLoading(false);
       }

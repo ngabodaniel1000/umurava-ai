@@ -2,24 +2,11 @@ import axios from 'axios';
 
 const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api',
+    withCredentials: true, // Crucial for cookies
     headers: {
         'Content-Type': 'application/json',
     },
 });
-
-// Interceptor to add auth token to requests
-api.interceptors.request.use(
-    (config) => {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => {
-        return Promise.reject(error);
-    }
-);
 
 // Interceptor to handle unauthorized errors
 api.interceptors.response.use(
@@ -27,9 +14,8 @@ api.interceptors.response.use(
     (error) => {
         if (error.response?.status === 401) {
             if (typeof window !== 'undefined') {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                if (window.location.pathname !== '/login') {
+                localStorage.removeItem('user'); // Also clearing user since token is gone
+                if (window.location.pathname !== '/login' && window.location.pathname !== '/' && window.location.pathname !== '/signup') {
                     window.location.href = '/login';
                 }
             }

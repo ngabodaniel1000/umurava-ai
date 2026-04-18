@@ -19,6 +19,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useEffect, useState } from 'react';
+import api from '@/lib/api-client';
 
 const navItems = [
   {
@@ -60,16 +61,24 @@ export function Sidebar({ isCollapsed, onToggle, isMobile }: SidebarProps) {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const userJson = localStorage.getItem('user');
-    if (userJson) {
-      setUser(JSON.parse(userJson));
-    }
+    const fetchUser = async () => {
+      try {
+        const { data } = await api.get('/users/profile');
+        setUser(data);
+      } catch (err) {
+        console.error('Failed to fetch user profile');
+      }
+    };
+    fetchUser();
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    router.push('/login');
+  const handleLogout = async () => {
+    try {
+      await api.post('/users/logout');
+      router.push('/login');
+    } catch (err) {
+      router.push('/login');
+    }
   };
 
   return (
@@ -83,7 +92,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobile }: SidebarProps) {
           isCollapsed ? "justify-center" : "justify-between"
         )}>
           {/* Logo Section */}
-          <div className={cn(
+          <Link href="/" className={cn(
             "items-center gap-2 overflow-hidden",
             isCollapsed ? "hidden" : "flex flex-1"
           )}>
@@ -93,7 +102,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobile }: SidebarProps) {
             <span className="text-xl font-bold text-foreground whitespace-nowrap overflow-hidden text-ellipsis">
               Umurava Ai
             </span>
-          </div>
+          </Link>
 
           {/* Toggle Button */}
           <Button

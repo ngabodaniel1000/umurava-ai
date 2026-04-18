@@ -4,24 +4,46 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Sparkles, Users, Zap, Target, TrendingUp, CheckCircle2, ArrowRight } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { useEffect, useState } from 'react';
+import api from '@/lib/api-client';
 
 export default function HomePage() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        await api.get('/users/profile');
+        setIsLoggedIn(true);
+      } catch (err) {
+        setIsLoggedIn(false);
+      }
+    };
+    checkAuth();
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-sm border-b border-border">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <div className="w-10 h-10 rounded-lg bg-accent flex items-center justify-center">
               <Sparkles className="w-6 h-6 text-accent-foreground" />
             </div>
             <span className="text-xl font-bold text-foreground">Umurava Ai</span>
-          </div>
+          </Link>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Link href="/login">
-              <Button variant="outline">Sign In</Button>
-            </Link>
+            {isLoggedIn ? (
+              <Link href="/dashboard">
+                <Button className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold">Dashboard</Button>
+              </Link>
+            ) : (
+              <Link href="/login">
+                <Button variant="outline">Sign In</Button>
+              </Link>
+            )}
           </div>
         </div>
       </nav>
@@ -36,12 +58,20 @@ export default function HomePage() {
             Discover the perfect candidates 10x faster. Umurava uses advanced AI to screen, score, and match top talent to your open positions.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/signup">
-              <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2">
-                Get Started <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-            <Button size="lg" variant="outline">
+            {isLoggedIn ? (
+              <Link href="/dashboard">
+                <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2 w-full sm:w-auto">
+                  Go to Dashboard <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/signup">
+                <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2 w-full sm:w-auto">
+                  Get Started <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+            )}
+            <Button size="lg" variant="outline" className="w-full sm:w-auto">
               View Demo
             </Button>
           </div>
@@ -230,11 +260,19 @@ export default function HomePage() {
           <p className="text-lg text-muted-foreground mb-8">
             Join thousands of companies using Umurava to find their next great hire.
           </p>
-          <Link href="/signup">
-            <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2">
-              Start Your Free Trial <ArrowRight className="w-4 h-4" />
-            </Button>
-          </Link>
+          {isLoggedIn ? (
+            <Link href="/dashboard">
+              <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2">
+                Go to Dashboard <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          ) : (
+            <Link href="/signup">
+              <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground gap-2">
+                Start Your Free Trial <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          )}
         </div>
       </section>
 

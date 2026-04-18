@@ -7,11 +7,17 @@ const ScreeningResult = require('../models/screeningModel');
 // @access  Private
 const getDashboardStats = async (req, res) => {
     try {
-        const totalJobs = await Job.countDocuments();
-        const totalCandidates = await Candidate.countDocuments();
-        const pendingScreenings = await ScreeningResult.countDocuments({ status: 'review' });
+        const userJobs = await Job.find({ recruiter: req.user._id }).select('_id');
+        const userJobIds = userJobs.map(job => job._id);
 
-        const results = await ScreeningResult.find({});
+        const totalJobs = userJobs.length;
+        const totalCandidates = await Candidate.countDocuments({ job: { $in: userJobIds } });
+        const pendingScreenings = await ScreeningResult.countDocuments({
+            job: { $in: userJobIds },
+            status: 'review'
+        });
+
+        const results = await ScreeningResult.find({ job: { $in: userJobIds } });
         const averageScore = results.length > 0
             ? (results.reduce((acc, item) => acc + item.score, 0) / results.length).toFixed(1)
             : 0;
@@ -32,7 +38,10 @@ const getDashboardStats = async (req, res) => {
 // @access  Private
 const getRecentScreenings = async (req, res) => {
     try {
-        const recentScreenings = await ScreeningResult.find({})
+        const userJobs = await Job.find({ recruiter: req.user._id }).select('_id');
+        const userJobIds = userJobs.map(job => job._id);
+
+        const recentScreenings = await ScreeningResult.find({ job: { $in: userJobIds } })
             .sort({ createdAt: -1 })
             .limit(5)
             .populate('job', 'title')

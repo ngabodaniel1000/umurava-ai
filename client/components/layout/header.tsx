@@ -14,22 +14,31 @@ import Link from 'next/link';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import api from '@/lib/api-client';
 
 export function Header() {
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const userJson = localStorage.getItem('user');
-    if (userJson) {
-      setUser(JSON.parse(userJson));
-    }
+    const fetchUser = async () => {
+      try {
+        const { data } = await api.get('/users/profile');
+        setUser(data);
+      } catch (err) {
+        // Interceptor handles redirect
+      }
+    };
+    fetchUser();
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    router.push('/login');
+  const handleLogout = async () => {
+    try {
+      await api.post('/users/logout')
+      router.push('/login');
+    } catch (err) {
+      router.push('/login');
+    }
   };
 
   return (

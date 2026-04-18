@@ -24,7 +24,7 @@ const createJob = async (req, res) => {
 // @route   GET /api/jobs
 // @access  Public
 const getJobs = async (req, res) => {
-    const jobs = await Job.find({}).populate('recruiter', 'name company');
+    const jobs = await Job.find({ recruiter: req.user._id }).populate('recruiter', 'name company');
     res.json(jobs);
 };
 
@@ -35,6 +35,10 @@ const getJobById = async (req, res) => {
     const job = await Job.findById(req.params.id).populate('recruiter', 'name company');
 
     if (job) {
+        if (job.recruiter._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            res.status(401).json({ message: 'Not authorized to view this job' });
+            return;
+        }
         res.json(job);
     } else {
         res.status(404).json({ message: 'Job not found' });

@@ -26,7 +26,10 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Enable CORS
-app.use(cors());
+app.use(cors({
+    origin: ['http://localhost:3000', 'https://umurava.ai'],
+    credentials: true
+}));
 
 // Dev logging middleware
 if (process.env.NODE_ENV === 'development') {

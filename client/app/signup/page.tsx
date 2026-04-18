@@ -35,9 +35,7 @@ export default function SignupPage() {
         setError('');
 
         try {
-            const { data } = await api.post('/users', formData);
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('user', JSON.stringify(data));
+            await api.post('/users', formData);
             router.push('/dashboard');
         } catch (err: any) {
             setError(err.response?.data?.message || 'Signup failed. Please try again.');
