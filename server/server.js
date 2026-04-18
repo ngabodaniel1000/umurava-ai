@@ -17,18 +17,39 @@ const candidateRoutes = require('./routes/candidateRoutes');
 const screeningRoutes = require('./routes/screeningRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 
-
-
 const app = express();
 
 // Body parser
 app.use(express.json());
 app.use(cookieParser());
 
-// Enable CORS
+// Define allowed origins
+const allowedOrigins = [
+    "https://umurava-recruiter-ai.vercel.app",
+    "http://localhost:3000",  // For local development
+    "http://localhost:5173",   // For Vite development,
+    process.env.FRONTEND_URL, 
+].filter(Boolean); // Remove any undefined values
+
+console.log('CORS Allowed Origins:', allowedOrigins);
+
+// Enable CORS with function to handle multiple origins
 app.use(cors({
-    origin: [process.env.FRONTEND_URL,"https://umurava-recruiter-ai.vercel.app"],
-    credentials: true
+    origin: function(origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl)
+        if (!origin) return callback(null, true);
+        
+        // Check if origin is allowed
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            console.log('Blocked origin:', origin);
+            callback(new Error(`CORS policy does not allow access from ${origin}`));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Cookie']
 }));
 
 // Dev logging middleware
@@ -42,8 +63,6 @@ app.use('/api/jobs', jobRoutes);
 app.use('/api/candidates', candidateRoutes);
 app.use('/api/screenings', screeningRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-
-
 
 app.get('/', (req, res) => {
     res.send('API is running...');
@@ -60,9 +79,6 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 4000;
 
-app.listen(
-    PORT,
-    console.log(
-        `Server running in ${process.env.NODE_ENV} mode on port ${PORT}`
-    )
-);
+app.listen(PORT, () => {
+    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+});
