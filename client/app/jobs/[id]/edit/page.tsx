@@ -91,7 +91,7 @@ export default function EditJobPage() {
                     Cancel
                 </Button>
 
-                <div className="mb-8">
+                <div className="mb-8 text-center">
                     <h1 className="text-3xl font-bold text-foreground">Edit Job</h1>
                     <p className="text-muted-foreground mt-2">Update the position details</p>
                 </div>

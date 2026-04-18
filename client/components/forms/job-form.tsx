@@ -66,7 +66,7 @@ export function JobForm({ onSubmit, initialData, mode = 'create' }: JobFormProps
 
   return (
     <Card className="p-8 bg-card border-border max-w-2xl mx-auto">
-      <h2 className="text-2xl font-bold text-foreground mb-6">
+      <h2 className="text-2xl font-bold text-foreground mb-6 text-center">
         {mode === 'edit' ? 'Edit Job' : 'Create New Job'}
       </h2>
 

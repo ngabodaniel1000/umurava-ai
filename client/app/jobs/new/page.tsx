@@ -46,7 +46,7 @@ export default function NewJobPage() {
   return (
     <AppLayout>
       <div className="p-8">
-        <div className="mb-8">
+        <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-foreground">Create New Job</h1>
           <p className="text-muted-foreground mt-2">Add a new position to your screening pipeline</p>
         </div>
