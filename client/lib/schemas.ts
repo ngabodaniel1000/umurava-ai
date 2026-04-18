@@ -33,6 +33,15 @@ export const loginFormSchema = z.object({
   password: z.string().min(6, { message: 'Password must be at least 6 characters' }),
 });
 
+export const signupFormSchema = z.object({
+  name: z.string().min(2, { message: 'Name must be at least 2 characters' }),
+  email: z.string().email({ message: 'Invalid email address' }),
+  company: z.string().min(2, { message: 'Company name is required' }),
+  password: z.string()
+    .min(6, { message: 'Password must be at least 6 characters' })
+    .max(30, { message: 'Password must be no more than 30 characters' }),
+});
+
 export const settingsFormSchema = z.object({
   companyName: z.string().min(2, { message: 'Company name is required' }),
   email: z.string().email({ message: 'Invalid email address' }),
@@ -43,4 +52,5 @@ export const settingsFormSchema = z.object({
 export type JobFormData = z.infer<typeof jobFormSchema>;
 export type CandidateFormData = z.infer<typeof candidateFormSchema>;
 export type LoginFormData = z.infer<typeof loginFormSchema>;
+export type SignupFormData = z.infer<typeof signupFormSchema>;
 export type SettingsFormData = z.infer<typeof settingsFormSchema>;

@@ -16,7 +16,7 @@ const authUser = async (req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'development ' ? "Lax" : "none",
-            maxAge: 30 * 24 * 60 * 60 * 1000, 
+            maxAge: 30 * 24 * 60 * 60 * 1000,
         });
 
         res.json({
@@ -37,6 +37,16 @@ const authUser = async (req, res) => {
 // @access  Public
 const registerUser = async (req, res) => {
     const { name, email, password, company, role } = req.body;
+
+    if (password.length < 6) {
+        res.status(400).json({ message: 'Password must be at least 6 characters long' });
+        return;
+    }
+
+    if (password.length > 30) {
+        res.status(400).json({ message: 'Password must be no more than 30 characters long' });
+        return;
+    }
 
     const userExists = await User.findOne({ email });
 
