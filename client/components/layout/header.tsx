@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, Settings, User } from 'lucide-react';
+import { LogOut, Settings, Sparkles, User } from 'lucide-react';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useEffect, useState } from 'react';
@@ -45,6 +45,18 @@ export function Header() {
     <header className="border-b border-border bg-card sticky top-0 z-50">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-4">
+          {/* Brand title – mobile only, sidebar shows it on desktop */}
+          <Link
+            href="/dashboard"
+            className="md:hidden flex items-center gap-2"
+          >
+            <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4 text-accent-foreground" />
+            </div>
+            <span className="text-base font-bold text-foreground tracking-tight">
+              Umurava <span className="text-accent-foreground">AI</span>
+            </span>
+          </Link>
         </div>
 
         <div className="flex items-center gap-2">
