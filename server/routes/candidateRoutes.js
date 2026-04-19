@@ -8,7 +8,7 @@ const {
 } = require('../controllers/candidateController');
 const { protect } = require('../middleware/authMiddleware');
 
-router.route('/').get(protect, getCandidates).post(addCandidate);
+router.route('/').get(protect, getCandidates).post(protect, addCandidate);
 router.route('/:id').get(protect, getCandidateById).delete(protect, deleteCandidate);
 
 module.exports = router;

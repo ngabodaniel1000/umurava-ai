@@ -3,9 +3,19 @@ const Job = require('../models/jobModel');
 
 // @desc    Add a new candidate to a job
 // @route   POST /api/candidates
-// @access  Public
+// @access  Private
 const addCandidate = async (req, res) => {
-    const { name, email, phone, experience, skills, education, resumeUrl, jobId } = req.body;
+    const {
+        firstName, lastName, email, headline, bio, location,
+        skills, languages,
+        experience,
+        education,
+        certifications,
+        projects,
+        availability,
+        socialLinks,
+        jobId,
+    } = req.body;
 
     const jobExists = await Job.findById(jobId);
 
@@ -14,14 +24,27 @@ const addCandidate = async (req, res) => {
         return;
     }
 
+    // Ensure job belongs to requester
+    if (jobExists.recruiter.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        res.status(401).json({ message: 'Not authorized for this job' });
+        return;
+    }
+
     const candidate = new Candidate({
-        name,
+        firstName,
+        lastName,
         email,
-        phone,
-        experience,
-        skills,
-        education,
-        resumeUrl,
+        headline,
+        bio,
+        location,
+        skills: skills || [],
+        languages: languages || [],
+        experience: experience || [],
+        education: education || [],
+        certifications: certifications || [],
+        projects: projects || [],
+        availability,
+        socialLinks,
         job: jobId,
     });
 
