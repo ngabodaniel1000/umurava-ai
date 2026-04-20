@@ -53,6 +53,10 @@ export default function CandidatesPage() {
   const [documentFilterType, setDocumentFilterType] = useState<string>('all');
   const [urlFilterJob, setUrlFilterJob] = useState<string>('all');
 
+  const [candidateFilterJob, setCandidateFilterJob] = useState<string>('all');
+  const [fromDate, setFromDate] = useState<string>('');
+  const [toDate, setToDate] = useState<string>('');
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -72,11 +76,37 @@ export default function CandidatesPage() {
     fetchData();
   }, []);
 
-  const filteredCandidates = candidates.filter((c) =>
-    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.skills.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredCandidates = candidates.filter((c: any) => {
+    const fullName = `${c.firstName ?? ''} ${c.lastName ?? ''}`.toLowerCase();
+    const skillNames = (c.skills ?? []).map((s: any) =>
+      typeof s === 'string' ? s.toLowerCase() : (s.name ?? '').toLowerCase()
+    );
+    const matchesSearch =
+      fullName.includes(searchQuery.toLowerCase()) ||
+      (c.email ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.location ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.headline ?? '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      skillNames.some((s: string) => s.includes(searchQuery.toLowerCase()));
+
+    // Handle either string ID or populated object ID
+    const cJobId = typeof c.job === 'string' ? c.job : (c.job?._id || c.job?.id);
+    const matchesJob = candidateFilterJob === 'all' || cJobId === candidateFilterJob;
+
+    let matchesDate = true;
+    if (fromDate || toDate) {
+      const applied = new Date(c.appliedDate);
+      if (fromDate) {
+        matchesDate = matchesDate && applied >= new Date(fromDate);
+      }
+      if (toDate) {
+        const end = new Date(toDate);
+        end.setHours(23, 59, 59, 999);
+        matchesDate = matchesDate && applied <= end;
+      }
+    }
+
+    return matchesSearch && matchesJob && matchesDate;
+  });
 
   return (
     <AppLayout>
@@ -227,14 +257,46 @@ export default function CandidatesPage() {
           </TabsList>
 
           <TabsContent value="list" className="space-y-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-              <Input
-                placeholder="Search by name, email, or skills..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-11 bg-input border-border text-foreground placeholder:text-muted-foreground"
-              />
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name, email, or skills..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 h-11 bg-input border-border text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div className="w-full md:w-64 shrink-0">
+                <Select value={candidateFilterJob} onValueChange={setCandidateFilterJob}>
+                  <SelectTrigger className="w-full h-11">
+                    <SelectValue placeholder="Filter by Job" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Jobs</SelectItem>
+                    {jobs.map(job => (
+                      <SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+                <Input
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  className="h-11 bg-input border-border text-foreground w-full md:w-auto cursor-pointer"
+                />
+                <span className="text-muted-foreground text-sm font-medium">to</span>
+                <Input
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  className="h-11 bg-input border-border text-foreground w-full md:w-auto cursor-pointer"
+                />
+              </div>
             </div>
 
             {error && (
@@ -256,46 +318,52 @@ export default function CandidatesPage() {
                       <thead>
                         <tr className="border-b border-border bg-muted/50">
                           <th className="px-6 py-4 text-left text-sm font-semibold text-muted-foreground">Name</th>
-                          <th className="px-6 py-4 text-left text-sm font-semibold text-muted-foreground">Contact</th>
-                          <th className="px-6 py-4 text-left text-sm font-semibold text-muted-foreground">Experience</th>
+                          <th className="px-6 py-4 text-left text-sm font-semibold text-muted-foreground">Headline & Location</th>
+                          <th className="px-6 py-4 text-left text-sm font-semibold text-muted-foreground">Skills</th>
                           <th className="px-6 py-4 text-left text-sm font-semibold text-muted-foreground">Applied</th>
                           <th className="px-6 py-4 text-left text-sm font-semibold text-muted-foreground">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredCandidates.map((candidate) => (
-                          <tr key={candidate.id} className="border-b border-border hover:bg-muted/50 transition">
-                            <td className="px-6 py-4 text-foreground font-medium">
-                              <Link href={`/candidates/${candidate.id}`} className="text-accent hover:underline">
-                                {candidate.name}
-                              </Link>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-2 text-sm text-foreground">
-                                <Mail className="w-4 h-4 text-muted-foreground" />
-                                <a href={`mailto:${candidate.email}`} className="hover:underline">
-                                  {candidate.email}
-                                </a>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center gap-2">
-                                <Briefcase className="w-4 h-4 text-accent" />
-                                <span className="text-sm font-medium text-foreground">{candidate.experience} yrs</span>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-xs text-muted-foreground">
-                              {new Date(candidate.appliedDate).toLocaleDateString()}
-                            </td>
-                            <td className="px-6 py-4">
-                              <Link href={`/candidates/${candidate.id}`}>
-                                <Button variant="outline" size="sm" className="border-border hover:bg-muted">
-                                  View
-                                </Button>
-                              </Link>
-                            </td>
-                          </tr>
-                        ))}
+                        {filteredCandidates.map((candidate: any) => {
+                          const cId = candidate._id || candidate.id;
+                          const fullName = `${candidate.firstName ?? ''} ${candidate.lastName ?? ''}`.trim() || candidate.name || 'Unknown';
+                          const skillsCount = candidate.skills?.length ?? 0;
+                          return (
+                            <tr key={cId} className="border-b border-border hover:bg-muted/50 transition">
+                              <td className="px-6 py-4">
+                                <Link href={`/candidates/${cId}`} className="text-accent hover:underline font-medium">
+                                  {fullName}
+                                </Link>
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                                  <Mail className="w-3 h-3" />
+                                  <a href={`mailto:${candidate.email}`} className="hover:underline">{candidate.email}</a>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <p className="text-sm text-foreground font-medium truncate max-w-[200px]">{candidate.headline || '—'}</p>
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                                  <Briefcase className="w-3 h-3" />
+                                  {candidate.location || '—'}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="text-sm font-medium text-accent">{skillsCount}</span>
+                                <span className="text-xs text-muted-foreground ml-1">{skillsCount === 1 ? 'skill' : 'skills'}</span>
+                              </td>
+                              <td className="px-6 py-4 text-xs text-muted-foreground">
+                                {new Date(candidate.appliedDate).toLocaleDateString()}
+                              </td>
+                              <td className="px-6 py-4">
+                                <Link href={`/candidates/${cId}`}>
+                                  <Button variant="outline" size="sm" className="border-border hover:bg-muted">
+                                    View
+                                  </Button>
+                                </Link>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
