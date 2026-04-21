@@ -1,14 +1,15 @@
-const ScreeningResult = require('../models/screeningModel');
-const Candidate = require('../models/candidateModel');
-const Job = require('../models/jobModel');
+import { Response } from 'express';
+import ScreeningResult from '../models/screeningModel';
+import Job from '../models/jobModel';
+import { AuthRequest } from '../middleware/authMiddleware';
 
 // @desc    Create or Update screening result for a job manually (fallback if needed)
 // @route   POST /api/screenings
 // @access  Private 
-const createScreeningResult = async (req, res) => {
+const createScreeningResult = async (req: AuthRequest, res: Response) => {
     const { jobId, jobTitle, totalCandidatesAnalyzed, shortlistCount, shortlist } = req.body;
 
-    let screeningResult = await ScreeningResult.findOne({ job: jobId });
+    let screeningResult: any = await ScreeningResult.findOne({ job: jobId });
 
     if (screeningResult) {
         screeningResult.jobTitle = jobTitle || screeningResult.jobTitle;
@@ -35,17 +36,16 @@ const createScreeningResult = async (req, res) => {
 // @desc    Get all screening results (optionally filter by job)
 // @route   GET /api/screenings
 // @access  Private
-const getScreeningResults = async (req, res) => {
+const getScreeningResults = async (req: AuthRequest, res: Response) => {
     const { jobId } = req.query;
 
-    // Find jobs owned by recruiter
-    const userJobs = await Job.find({ recruiter: req.user._id }).select('_id');
+    const userJobs = await Job.find({ recruiter: req.user?._id }).select('_id');
     const userJobIds = userJobs.map(job => job._id.toString());
 
-    let filter = { job: { $in: userJobIds } };
+    let filter: any = { job: { $in: userJobIds } };
 
     if (jobId) {
-        if (!userJobIds.includes(jobId)) {
+        if (!userJobIds.includes(jobId as string)) {
             return res.status(401).json({ message: 'Not authorized for this job' });
         }
         filter.job = jobId;
@@ -60,14 +60,14 @@ const getScreeningResults = async (req, res) => {
 // @desc    Update screening result status for a specific candidate
 // @route   PUT /api/screenings/:id
 // @access  Private
-const updateScreeningStatus = async (req, res) => {
+const updateScreeningStatus = async (req: AuthRequest, res: Response) => {
     const { candidateId, status, feedback } = req.body;
 
-    const screening = await ScreeningResult.findById(req.params.id);
+    const screening: any = await ScreeningResult.findById(req.params.id);
 
     if (screening) {
         const candidateInShortlist = screening.shortlist.find(
-            (c) => c.candidate.toString() === candidateId
+            (c: any) => c.candidate.toString() === candidateId
         );
 
         if (candidateInShortlist) {
@@ -84,7 +84,7 @@ const updateScreeningStatus = async (req, res) => {
     }
 };
 
-module.exports = {
+export {
     createScreeningResult,
     getScreeningResults,
     updateScreeningStatus,

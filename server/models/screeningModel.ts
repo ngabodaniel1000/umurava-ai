@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const screenedCandidateSchema = new mongoose.Schema({
     rank: { type: Number, required: true },
@@ -12,7 +12,7 @@ const screenedCandidateSchema = new mongoose.Schema({
     status: { type: String, enum: ['passed', 'rejected', 'review'], default: 'review' }
 });
 
-const screeningResultSchema = mongoose.Schema(
+const screeningResultSchema = new mongoose.Schema(
     {
         job: {
             type: mongoose.Schema.Types.ObjectId,
@@ -42,4 +42,4 @@ const screeningResultSchema = mongoose.Schema(
 
 const ScreeningResult = mongoose.model('ScreeningResult', screeningResultSchema);
 
-module.exports = ScreeningResult;
+export default ScreeningResult;

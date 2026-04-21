@@ -1,8 +1,14 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/userModel');
+import jwt from 'jsonwebtoken';
+import { Request, Response, NextFunction } from 'express';
+import User from '../models/userModel';
 
-const protect = async (req, res, next) => {
-    let token;
+export interface AuthRequest extends Request {
+    user?: any;
+    [key: string]: any;
+}
+
+const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    let token: string | undefined;
 
     if (req.cookies && req.cookies.token) {
         token = req.cookies.token;
@@ -15,7 +21,7 @@ const protect = async (req, res, next) => {
 
     if (token) {
         try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as any;
 
             req.user = await User.findById(decoded.id).select('-password');
 
@@ -33,7 +39,7 @@ const protect = async (req, res, next) => {
     }
 };
 
-const admin = (req, res, next) => {
+const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
     if (req.user && req.user.role === 'admin') {
         next();
     } else {
@@ -41,4 +47,4 @@ const admin = (req, res, next) => {
     }
 };
 
-module.exports = { protect, admin };
+export { protect, admin };

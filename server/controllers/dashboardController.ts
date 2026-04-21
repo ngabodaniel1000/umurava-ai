@@ -1,13 +1,15 @@
-const Job = require('../models/jobModel');
-const Candidate = require('../models/candidateModel');
-const ScreeningResult = require('../models/screeningModel');
+import { Response } from 'express';
+import Job from '../models/jobModel';
+import Candidate from '../models/candidateModel';
+import ScreeningResult from '../models/screeningModel';
+import { AuthRequest } from '../middleware/authMiddleware';
 
 // @desc    Get dashboard stats
 // @route   GET /api/dashboard/stats
 // @access  Private
-const getDashboardStats = async (req, res) => {
+const getDashboardStats = async (req: AuthRequest, res: Response) => {
     try {
-        const userJobs = await Job.find({ recruiter: req.user._id }).select('_id');
+        const userJobs = await Job.find({ recruiter: req.user?._id }).select('_id');
         const userJobIds = userJobs.map(job => job._id);
 
         const totalJobs = userJobs.length;
@@ -18,8 +20,8 @@ const getDashboardStats = async (req, res) => {
         let totalScore = 0;
         let countScored = 0;
 
-        results.forEach(res => {
-            res.shortlist.forEach(c => {
+        results.forEach(resItem => {
+            resItem.shortlist.forEach(c => {
                 if (c.status === 'review') pendingScreenings++;
                 totalScore += c.matchScore;
                 countScored++;
@@ -34,7 +36,7 @@ const getDashboardStats = async (req, res) => {
             pendingScreenings,
             averageScore
         });
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ message: error.message });
     }
 };
@@ -42,23 +44,22 @@ const getDashboardStats = async (req, res) => {
 // @desc    Get recent screenings
 // @route   GET /api/dashboard/recent
 // @access  Private
-const getRecentScreenings = async (req, res) => {
+const getRecentScreenings = async (req: AuthRequest, res: Response) => {
     try {
-        const userJobs = await Job.find({ recruiter: req.user._id }).select('_id');
+        const userJobs = await Job.find({ recruiter: req.user?._id }).select('_id');
         const userJobIds = userJobs.map(job => job._id);
 
-        const recentJobs = await ScreeningResult.find({ job: { $in: userJobIds } })
+        const recentJobs: any = await ScreeningResult.find({ job: { $in: userJobIds } })
             .sort({ createdAt: -1 })
             .limit(5)
             .populate('job', 'title')
             .populate('shortlist.candidate', 'firstName lastName');
 
-        // Extract individual candidate screenings from the job results to display as 'recent screenings'
-        let recentScreenings = [];
+        let recentScreenings: any[] = [];
         for (const jobResult of recentJobs) {
             for (const item of jobResult.shortlist) {
                 recentScreenings.push({
-                    _id: jobResult._id, // might want to use unique candidate IDs, but this is acceptable for now
+                    _id: jobResult._id,
                     candidateId: item.candidate?._id,
                     job: jobResult.job,
                     candidate: item.candidate,
@@ -69,16 +70,15 @@ const getRecentScreenings = async (req, res) => {
             }
         }
 
-        // Sort the flattened list by created logic and just take top 5
-        recentScreenings = recentScreenings.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
+        recentScreenings = recentScreenings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
 
         res.json(recentScreenings);
-    } catch (error) {
+    } catch (error: any) {
         res.status(500).json({ message: error.message });
     }
 };
 
-module.exports = {
+export {
     getDashboardStats,
     getRecentScreenings
 };

@@ -1,9 +1,11 @@
-const Job = require('../models/jobModel');
+import { Response } from 'express';
+import Job from '../models/jobModel';
+import { AuthRequest } from '../middleware/authMiddleware';
 
 // @desc    Create a new job
 // @route   POST /api/jobs
 // @access  Private
-const createJob = async (req, res) => {
+const createJob = async (req: AuthRequest, res: Response) => {
     const { title, description, skillsNeeded, experience, salaryRange, location, department } = req.body;
 
     const job = new Job({
@@ -14,7 +16,7 @@ const createJob = async (req, res) => {
         salaryRange,
         location,
         department,
-        recruiter: req.user._id,
+        recruiter: req.user?._id,
     });
 
     const createdJob = await job.save();
@@ -24,19 +26,19 @@ const createJob = async (req, res) => {
 // @desc    Get all jobs
 // @route   GET /api/jobs
 // @access  Public
-const getJobs = async (req, res) => {
-    const jobs = await Job.find({ recruiter: req.user._id }).populate('recruiter', 'name company');
+const getJobs = async (req: AuthRequest, res: Response) => {
+    const jobs = await Job.find({ recruiter: req.user?._id }).populate('recruiter', 'name company');
     res.json(jobs);
 };
 
 // @desc    Get job by ID
 // @route   GET /api/jobs/:id
 // @access  Public
-const getJobById = async (req, res) => {
-    const job = await Job.findById(req.params.id).populate('recruiter', 'name company');
+const getJobById = async (req: AuthRequest, res: Response) => {
+    const job: any = await Job.findById(req.params.id).populate('recruiter', 'name company');
 
     if (job) {
-        if (job.recruiter._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        if (job.recruiter._id.toString() !== req.user?._id.toString() && req.user?.role !== 'admin') {
             res.status(401).json({ message: 'Not authorized to view this job' });
             return;
         }
@@ -49,13 +51,13 @@ const getJobById = async (req, res) => {
 // @desc    Update a job
 // @route   PUT /api/jobs/:id
 // @access  Private
-const updateJob = async (req, res) => {
+const updateJob = async (req: AuthRequest, res: Response) => {
     const { title, description, skillsNeeded, experience, salaryRange, location, department } = req.body;
 
-    const job = await Job.findById(req.params.id);
+    const job: any = await Job.findById(req.params.id);
 
     if (job) {
-        if (job.recruiter.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        if (job.recruiter.toString() !== req.user?._id.toString() && req.user?.role !== 'admin') {
             res.status(401).json({ message: 'Not authorized to update this job' });
             return;
         }
@@ -78,11 +80,11 @@ const updateJob = async (req, res) => {
 // @desc    Delete a job
 // @route   DELETE /api/jobs/:id
 // @access  Private
-const deleteJob = async (req, res) => {
-    const job = await Job.findById(req.params.id);
+const deleteJob = async (req: AuthRequest, res: Response) => {
+    const job: any = await Job.findById(req.params.id);
 
     if (job) {
-        if (job.recruiter.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        if (job.recruiter.toString() !== req.user?._id.toString() && req.user?.role !== 'admin') {
             res.status(401).json({ message: 'Not authorized to delete this job' });
             return;
         }
@@ -94,7 +96,7 @@ const deleteJob = async (req, res) => {
     }
 };
 
-module.exports = {
+export {
     createJob,
     getJobs,
     getJobById,
