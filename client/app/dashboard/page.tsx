@@ -15,6 +15,8 @@ import api from '@/lib/api-client';
 export default function DashboardPage() {
   const [stats, setStats] = useState<any[]>([]);
   const [recentScreenings, setRecentScreenings] = useState<any[]>([]);
+  const [activityData, setActivityData] = useState<any[]>([]);
+  const [statusData, setStatusData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -55,6 +57,8 @@ export default function DashboardPage() {
 
         setStats(statsData);
         setRecentScreenings(recentRes.data);
+        setActivityData(statsRes.data.activityData || []);
+        setStatusData(statsRes.data.statusDistribution || []);
       } catch (err: any) {
         setError(err.response?.data?.message || 'Failed to fetch dashboard data');
       } finally {
@@ -124,7 +128,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div className="h-[300px] md:h-[350px] w-full">
-                  <ActivityChart />
+                  <ActivityChart data={activityData} />
                 </div>
               </Card>
 
@@ -134,7 +138,7 @@ export default function DashboardPage() {
                   <p className="text-xs md:text-sm text-muted-foreground">Current status of all candidates</p>
                 </div>
                 <div className="flex-1 flex items-center justify-center min-h-[200px]">
-                  <StatusChart />
+                  <StatusChart data={statusData} />
                 </div>
               </Card>
             </div>
@@ -163,7 +167,7 @@ export default function DashboardPage() {
                     {recentScreenings.map((screening) => (
                       <tr key={screening._id} className="hover:bg-muted/50 transition-colors">
                         <td className="px-6 py-4 text-sm text-foreground font-medium">{screening.job?.title || 'N/A'}</td>
-                        <td className="px-6 py-4 text-sm text-foreground">{screening.candidate?.name || 'N/A'}</td>
+                        <td className="px-6 py-4 text-sm text-foreground">{screening.candidate ? `${screening.candidate.firstName} ${screening.candidate.lastName}` : 'N/A'}</td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <div className="flex-1 min-w-[100px] bg-muted rounded-full h-1.5 overflow-hidden">

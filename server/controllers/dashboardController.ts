@@ -20,21 +20,63 @@ const getDashboardStats = async (req: AuthRequest, res: Response) => {
         let totalScore = 0;
         let countScored = 0;
 
+        const statusCounts = { passed: 0, rejected: 0, review: 0 };
+        const dailyActivity: { [key: string]: number } = {};
+
+        // Initialize last 7 days for activity
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().split('T')[0];
+            dailyActivity[dateStr] = 0;
+        }
+
         results.forEach(resItem => {
+            // Activity by date (total candidates analyzed)
+            const dateStr = new Date(resItem.createdAt).toISOString().split('T')[0];
+            if (dailyActivity[dateStr] !== undefined) {
+                dailyActivity[dateStr] += resItem.totalCandidatesAnalyzed || 0;
+            }
+
             resItem.shortlist.forEach(c => {
-                if (c.status === 'review') pendingScreenings++;
+                // Shortlist statuses
+                if (c.status === 'passed') statusCounts.passed++;
+                else if (c.status === 'rejected') statusCounts.rejected++;
+                else statusCounts.review++;
+
                 totalScore += c.matchScore;
                 countScored++;
             });
         });
 
+        // Any candidate not explicitly passed or rejected is essentially in review/pending
+        // We adjust review count to be: Total Candidates - Passed - Rejected
+        // This makes the pie chart represent the ENTIRE candidate pool
+        statusCounts.review = Math.max(0, totalCandidates - statusCounts.passed - statusCounts.rejected);
+        pendingScreenings = statusCounts.review;
+
         const averageScore = countScored > 0 ? (totalScore / countScored).toFixed(1) : 0;
+
+        // Format activity for chart
+        const activityData = Object.keys(dailyActivity).sort().map(date => {
+            const dayName = new Date(date).toLocaleDateString('en-US', { weekday: 'short' });
+            return { day: dayName, screenings: dailyActivity[date] };
+        });
+
+        // Format status for chart
+        const statusDistribution = [
+            { status: 'passed', count: statusCounts.passed, fill: 'var(--color-passed)' },
+            { status: 'review', count: statusCounts.review, fill: 'var(--color-review)' },
+            { status: 'rejected', count: statusCounts.rejected, fill: 'var(--color-rejected)' },
+        ];
 
         res.json({
             totalJobs,
             totalCandidates,
             pendingScreenings,
-            averageScore
+            averageScore,
+            activityData,
+            statusDistribution
         });
     } catch (error: any) {
         res.status(500).json({ message: error.message });
