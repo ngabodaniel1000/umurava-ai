@@ -2,31 +2,41 @@ const ScreeningResult = require('../models/screeningModel');
 const Candidate = require('../models/candidateModel');
 const Job = require('../models/jobModel');
 
-// @desc    Create screening result
+// @desc    Create or Update screening result for a job manually (fallback if needed)
 // @route   POST /api/screenings
-// @access  Private (usually automated by AI service or manual HR review)
+// @access  Private 
 const createScreeningResult = async (req, res) => {
-    const { jobId, candidateId, score, matchPercentage, matchedSkills, feedback, status } = req.body;
+    const { jobId, jobTitle, totalCandidatesAnalyzed, shortlistCount, shortlist } = req.body;
 
-    const screeningResult = new ScreeningResult({
-        job: jobId,
-        candidate: candidateId,
-        score,
-        matchPercentage,
-        matchedSkills,
-        feedback,
-        status,
-    });
+    let screeningResult = await ScreeningResult.findOne({ job: jobId });
 
-    const createdResult = await screeningResult.save();
-    res.status(201).json(createdResult);
+    if (screeningResult) {
+        screeningResult.jobTitle = jobTitle || screeningResult.jobTitle;
+        screeningResult.totalCandidatesAnalyzed = totalCandidatesAnalyzed || screeningResult.totalCandidatesAnalyzed;
+        screeningResult.shortlistCount = shortlistCount || screeningResult.shortlistCount;
+        screeningResult.shortlist = shortlist || screeningResult.shortlist;
+
+        const updatedResult = await screeningResult.save();
+        return res.status(200).json(updatedResult);
+    } else {
+        screeningResult = new ScreeningResult({
+            job: jobId,
+            jobTitle,
+            totalCandidatesAnalyzed,
+            shortlistCount,
+            shortlist: shortlist || []
+        });
+
+        const createdResult = await screeningResult.save();
+        return res.status(201).json(createdResult);
+    }
 };
 
-// @desc    Get all screening results (optionally filter by job or candidate)
+// @desc    Get all screening results (optionally filter by job)
 // @route   GET /api/screenings
 // @access  Private
 const getScreeningResults = async (req, res) => {
-    const { jobId, candidateId } = req.query;
+    const { jobId } = req.query;
 
     // Find jobs owned by recruiter
     const userJobs = await Job.find({ recruiter: req.user._id }).select('_id');
@@ -41,28 +51,34 @@ const getScreeningResults = async (req, res) => {
         filter.job = jobId;
     }
 
-    if (candidateId) filter.candidate = candidateId;
-
     const results = await ScreeningResult.find(filter)
         .populate('job', 'title')
-        .populate('candidate', 'name email');
+        .populate('shortlist.candidate', 'firstName lastName email');
     res.json(results);
 };
 
-// @desc    Update screening result status
+// @desc    Update screening result status for a specific candidate
 // @route   PUT /api/screenings/:id
 // @access  Private
 const updateScreeningStatus = async (req, res) => {
-    const { status, feedback } = req.body;
+    const { candidateId, status, feedback } = req.body;
 
     const screening = await ScreeningResult.findById(req.params.id);
 
     if (screening) {
-        screening.status = status || screening.status;
-        screening.feedback = feedback || screening.feedback;
+        const candidateInShortlist = screening.shortlist.find(
+            (c) => c.candidate.toString() === candidateId
+        );
 
-        const updatedScreening = await screening.save();
-        res.json(updatedScreening);
+        if (candidateInShortlist) {
+            candidateInShortlist.status = status || candidateInShortlist.status;
+            candidateInShortlist.reasoning = feedback || candidateInShortlist.reasoning;
+
+            const updatedScreening = await screening.save();
+            return res.json(updatedScreening);
+        } else {
+            return res.status(404).json({ message: 'Candidate not found in screening shortlist' });
+        }
     } else {
         res.status(404).json({ message: 'Screening result not found' });
     }

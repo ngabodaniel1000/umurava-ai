@@ -1,38 +1,37 @@
 const mongoose = require('mongoose');
 
+const screenedCandidateSchema = new mongoose.Schema({
+    rank: { type: Number, required: true },
+    candidate: { type: mongoose.Schema.Types.ObjectId, ref: 'Candidate', required: true },
+    candidateName: { type: String },
+    matchScore: { type: Number, required: true },
+    recommendation: { type: String },
+    strengths: { type: [String] },
+    gaps: { type: [String] },
+    reasoning: { type: String },
+    status: { type: String, enum: ['passed', 'rejected', 'review'], default: 'review' }
+});
+
 const screeningResultSchema = mongoose.Schema(
     {
         job: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Job',
             required: true,
+            unique: true,
         },
-        candidate: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Candidate',
-            required: true,
-        },
-        score: {
-            type: Number,
-            required: true,
-        },
-        matchPercentage: {
-            type: Number,
-            required: true,
-        },
-        matchedSkills: {
-            type: [String],
-            required: true,
-        },
-        feedback: {
+        jobTitle: {
             type: String,
-            required: true,
         },
-        status: {
-            type: String,
-            enum: ['passed', 'rejected', 'review'],
-            default: 'review',
+        totalCandidatesAnalyzed: {
+            type: Number,
+            default: 0,
         },
+        shortlistCount: {
+            type: Number,
+            default: 0,
+        },
+        shortlist: [screenedCandidateSchema]
     },
     {
         timestamps: true,

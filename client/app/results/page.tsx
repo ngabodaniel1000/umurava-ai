@@ -8,19 +8,50 @@ import { Input } from '@/components/ui/input';
 import { useState, useEffect } from 'react';
 import { Search, Filter, Download, CheckCircle, AlertCircle, XCircle, Loader2 } from 'lucide-react';
 import api from '@/lib/api-client';
+import Link from 'next/link';
 
 export default function ResultsPage() {
   const [results, setResults] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<{ id: string, title: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [filterJob, setFilterJob] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchResults = async () => {
       try {
         const { data } = await api.get('/screenings');
-        setResults(data);
+
+        let flatResults: any[] = [];
+        let uniqueJobs = new Map<string, string>();
+
+        data.forEach((jobResult: any) => {
+          const jobId = jobResult.job?._id || jobResult.job;
+          const jobTitle = jobResult.jobTitle || jobResult.job?.title || 'Unknown Job';
+          if (jobId) {
+            uniqueJobs.set(jobId, jobTitle);
+          }
+
+          if (jobResult.shortlist) {
+            jobResult.shortlist.forEach((candidateItem: any) => {
+              flatResults.push({
+                _id: jobResult._id + '_' + candidateItem.candidate?._id,
+                jobId: jobId,
+                candidateId: candidateItem.candidate?._id || candidateItem.candidate,
+                candidate: { name: candidateItem.candidateName || candidateItem.candidate?.firstName + ' ' + candidateItem.candidate?.lastName },
+                job: { title: jobTitle },
+                score: candidateItem.matchScore,
+                matchPercentage: candidateItem.matchScore,
+                status: candidateItem.status,
+                createdAt: jobResult.createdAt,
+              });
+            });
+          }
+        });
+        setResults(flatResults);
+        setJobs(Array.from(uniqueJobs, ([id, title]) => ({ id, title })));
       } catch (err: any) {
         setError(err.response?.data?.message || 'Failed to fetch results');
       } finally {
@@ -36,14 +67,15 @@ export default function ResultsPage() {
       result.candidate?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       result.job?.title?.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = !filterStatus || result.status === filterStatus;
-    return matchesSearch && matchesStatus;
+    const matchesJob = !filterJob || result.jobId === filterJob;
+    return matchesSearch && matchesStatus && matchesJob;
   });
 
   const stats = {
-    total: results.length,
-    passed: results.filter((r) => r.status === 'passed').length,
-    review: results.filter((r) => r.status === 'review').length,
-    rejected: results.filter((r) => r.status === 'rejected').length,
+    total: filteredResults.length,
+    passed: filteredResults.filter((r) => r.status === 'passed').length,
+    review: filteredResults.filter((r) => r.status === 'review').length,
+    rejected: filteredResults.filter((r) => r.status === 'rejected').length,
   };
 
   const getStatusIcon = (status: string) => {
@@ -119,12 +151,26 @@ export default function ResultsPage() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
                 <input
-                  placeholder="Search by candidate or job..."
+                  placeholder="Search by candidate or job title..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 h-11 bg-card border border-border rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/50"
                 />
               </div>
+
+              <div className="flex-shrink-0 w-full md:w-64">
+                <select
+                  value={filterJob || ''}
+                  onChange={(e) => setFilterJob(e.target.value || null)}
+                  className="w-full h-11 bg-card border border-border rounded-md text-foreground focus:outline-none focus:ring-2 focus:ring-accent/50 px-3"
+                >
+                  <option value="">All Jobs</option>
+                  {jobs.map(job => (
+                    <option key={job.id} value={job.id}>{job.title}</option>
+                  ))}
+                </select>
+              </div>
+
               <div className="flex flex-wrap gap-2">
                 <Button
                   variant={filterStatus === null ? 'default' : 'outline'}
@@ -220,9 +266,15 @@ export default function ResultsPage() {
                           {new Date(result.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4">
-                          <Button size="sm" variant="outline" className="border-border hover:bg-muted">
-                            View
-                          </Button>
+                          <Link href={`/results/${result.jobId}/${result.candidateId}`}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-border hover:bg-muted"
+                            >
+                              View
+                            </Button>
+                          </Link>
                         </td>
                       </tr>
                     ))}
