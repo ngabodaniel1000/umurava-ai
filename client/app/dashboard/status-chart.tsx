@@ -1,6 +1,6 @@
 'use client';
 
-import { Label, Pie, PieChart } from 'recharts';
+import { Cell, Label, Pie, PieChart } from 'recharts';
 import {
     ChartConfig,
     ChartContainer,
@@ -8,12 +8,6 @@ import {
     ChartTooltipContent,
 } from '@/components/ui/chart';
 import * as React from 'react';
-
-const chartData = [
-    { status: 'passed', count: 145, fill: 'var(--color-passed)' },
-    { status: 'review', count: 68, fill: 'var(--color-review)' },
-    { status: 'rejected', count: 35, fill: 'var(--color-rejected)' },
-];
 
 const chartConfig = {
     count: {
@@ -33,15 +27,28 @@ const chartConfig = {
     },
 } satisfies ChartConfig;
 
-export function StatusChart() {
+export function StatusChart({ data }: { data?: any[] }) {
+    // Check if we actually have any candidates to show
+    const totalCount = data?.reduce((acc, curr) => acc + (curr.count || 0), 0) || 0;
+
+    // Default structure if no data provided
+    const displayData = data && data.length > 0 ? data : [
+        { status: 'passed', count: 0 },
+        { status: 'review', count: 0 },
+        { status: 'rejected', count: 0 },
+    ];
+
     const totalCandidates = React.useMemo(() => {
-        return chartData.reduce((acc, curr) => acc + curr.count, 0);
-    }, []);
+        return displayData.reduce((acc, curr) => acc + curr.count, 0);
+    }, [displayData]);
+
+    // Handle the case where all counts are 0 - provide a placeholder "grey" slice
+    const chartData = totalCandidates > 0 ? displayData : [{ status: 'none', count: 1, isPlaceholder: true }];
 
     return (
         <ChartContainer
             config={chartConfig}
-            className="mx-auto aspect-square max-h-[250px]"
+            className="mx-auto aspect-square max-h-[250px] w-full"
         >
             <PieChart>
                 <ChartTooltip
@@ -55,6 +62,14 @@ export function StatusChart() {
                     innerRadius={60}
                     strokeWidth={5}
                 >
+                    {chartData.map((entry, index) => {
+                        // Use color from config based on status key
+                        const color = entry.isPlaceholder
+                            ? 'rgba(156, 163, 175, 0.2)' // Grey for empty state
+                            : (chartConfig[entry.status as keyof typeof chartConfig] as any)?.color || 'var(--chart-1)';
+
+                        return <Cell key={`cell-${index}`} fill={color} />;
+                    })}
                     <Label
                         content={({ viewBox }) => {
                             if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {

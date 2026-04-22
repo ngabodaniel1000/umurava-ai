@@ -1,13 +1,15 @@
-const User = require('../models/userModel');
-const generateToken = require('../config/generateToken');
+import { Response } from 'express';
+import User from '../models/userModel';
+import generateToken from '../config/generateToken';
+import { AuthRequest } from '../middleware/authMiddleware';
 
 // @desc    Auth user & get token
 // @route   POST /api/users/login
 // @access  Public
-const authUser = async (req, res) => {
+const authUser = async (req: AuthRequest, res: Response) => {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
+    const user: any = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
         const token = generateToken(user._id);
@@ -16,7 +18,7 @@ const authUser = async (req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'development' ? "lax" : "none",
-            maxAge: 30 * 24 * 60 * 60 * 1000,   
+            maxAge: 30 * 24 * 60 * 60 * 1000,
         });
 
         res.json({
@@ -35,7 +37,7 @@ const authUser = async (req, res) => {
 // @desc    Register a new user
 // @route   POST /api/users
 // @access  Public
-const registerUser = async (req, res) => {
+const registerUser = async (req: AuthRequest, res: Response) => {
     const { name, email, password, company, role } = req.body;
 
     if (password.length < 6) {
@@ -88,7 +90,7 @@ const registerUser = async (req, res) => {
 // @desc    Logout user / clear cookie
 // @route   POST /api/users/logout
 // @access  Public
-const logoutUser = async (req, res) => {
+const logoutUser = async (req: AuthRequest, res: Response) => {
     res.cookie('token', '', {
         httpOnly: true,
         expires: new Date(0),
@@ -99,7 +101,7 @@ const logoutUser = async (req, res) => {
 // @desc    Get user profile
 // @route   GET /api/users/profile
 // @access  Private
-const getUserProfile = async (req, res) => {
+const getUserProfile = async (req: AuthRequest, res: Response) => {
     const user = await User.findById(req.user._id);
 
     if (user) {
@@ -116,7 +118,7 @@ const getUserProfile = async (req, res) => {
     }
 };
 
-module.exports = {
+export {
     authUser,
     registerUser,
     getUserProfile,

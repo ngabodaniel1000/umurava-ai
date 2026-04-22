@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const skillSchema = new mongoose.Schema({
     name: { type: String, required: true },
@@ -74,7 +74,7 @@ const socialLinksSchema = new mongoose.Schema({
     other: { type: String },
 }, { _id: false });
 
-const candidateSchema = mongoose.Schema(
+const candidateSchema = new mongoose.Schema(
     {
         // 3.1 Basic Information
         firstName: { type: String, required: true },
@@ -125,10 +125,10 @@ const candidateSchema = mongoose.Schema(
 );
 
 // Virtual: full name for backward compatibility
-candidateSchema.virtual('name').get(function () {
+candidateSchema.virtual('name').get(function (this: any) {
     return `${this.firstName} ${this.lastName}`.trim();
 });
 
 const Candidate = mongoose.model('Candidate', candidateSchema);
 
-module.exports = Candidate;
+export default Candidate;

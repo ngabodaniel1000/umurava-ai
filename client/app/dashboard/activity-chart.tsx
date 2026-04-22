@@ -8,16 +8,6 @@ import {
     ChartTooltipContent,
 } from '@/components/ui/chart';
 
-const chartData = [
-    { day: 'Mon', screenings: 4 },
-    { day: 'Tue', screenings: 7 },
-    { day: 'Wed', screenings: 5 },
-    { day: 'Thu', screenings: 12 },
-    { day: 'Fri', screenings: 8 },
-    { day: 'Sat', screenings: 3 },
-    { day: 'Sun', screenings: 6 },
-];
-
 const chartConfig = {
     screenings: {
         label: 'Screenings',
@@ -25,11 +15,21 @@ const chartConfig = {
     },
 } satisfies ChartConfig;
 
-export function ActivityChart() {
+export function ActivityChart({ data }: { data?: any[] }) {
+    const displayData = data && data.length > 0 ? data : [
+        { day: 'Mon', screenings: 0 },
+        { day: 'Tue', screenings: 0 },
+        { day: 'Wed', screenings: 0 },
+        { day: 'Thu', screenings: 0 },
+        { day: 'Fri', screenings: 0 },
+        { day: 'Sat', screenings: 0 },
+        { day: 'Sun', screenings: 0 },
+    ];
+
     return (
         <ChartContainer config={chartConfig} className="h-[300px] w-full">
             <AreaChart
-                data={chartData}
+                data={displayData}
                 margin={{
                     left: -20,
                     right: 12,

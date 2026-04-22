@@ -1,13 +1,13 @@
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const {
+import {
     createScreeningResult,
     getScreeningResults,
     updateScreeningStatus,
-} = require('../controllers/screeningController');
-const { protect } = require('../middleware/authMiddleware');
+} from '../controllers/screeningController';
+import { protect } from '../middleware/authMiddleware';
 
 router.route('/').get(protect, getScreeningResults).post(protect, createScreeningResult);
 router.route('/:id').put(protect, updateScreeningStatus);
 
-module.exports = router;
+export default router;
