@@ -4,15 +4,21 @@ import Job from '../models/jobModel';
 import ScreeningResult from '../models/screeningModel';
 import { Request, Response } from 'express';
 
-// Extend Express Request type to include user
-interface AuthRequest extends Request {
+
+
+// Simplified AuthRequest - extends Request and adds user property
+export interface AuthRequest extends Request {
     user?: {
         _id: string;
         email: string;
         role: string;
     };
+    params: {
+        jobId?: string;
+        [key: string]: string | undefined;
+    };
+    body: any;
 }
-
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 // Define available models with fallback priority
@@ -194,7 +200,7 @@ function extractJSONFromResponse(rawText: string): any {
     return JSON.parse(jsonText);
 }
 
-// @desc    Run AI screening for a job using Gemini with model fallback
+// @desc    Run AI screening for a job with Gemini using model fallback
 // @route   POST /api/ai/screen/:jobId
 // @access  Private
 export const runAIScreening = async (req: AuthRequest, res: Response) => {
