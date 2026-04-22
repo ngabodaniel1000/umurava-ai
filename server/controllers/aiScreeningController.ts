@@ -6,14 +6,19 @@ import { Request, Response } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
 
 // Extend Express Request type to include user and proper generics
-interface AuthRequest<P = ParamsDictionary, ResBody = any, ReqBody = any, ReqQuery = any> extends Request<P, ResBody, ReqBody, ReqQuery> {
+// Simplified AuthRequest - extends Request and adds user property
+export interface AuthRequest extends Request {
     user?: {
         _id: string;
         email: string;
         role: string;
     };
+    params: {
+        jobId?: string;
+        [key: string]: string | undefined;
+    };
+    body: any;
 }
-
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 
 // Define available models with fallback priority
