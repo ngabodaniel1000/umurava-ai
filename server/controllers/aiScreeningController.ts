@@ -3,7 +3,7 @@ import Candidate from '../models/candidateModel';
 import Job from '../models/jobModel';
 import ScreeningResult from '../models/screeningModel';
 import { Request, Response } from 'express';
-import { ParamsDictionary } from 'express-serve-static-core';
+
 
 
 // Simplified AuthRequest - extends Request and adds user property
