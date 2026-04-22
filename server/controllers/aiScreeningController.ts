@@ -5,7 +5,7 @@ import ScreeningResult from '../models/screeningModel';
 import { Request, Response } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
 
-// Extend Express Request type to include user and proper generics
+
 // Simplified AuthRequest - extends Request and adds user property
 export interface AuthRequest extends Request {
     user?: {
