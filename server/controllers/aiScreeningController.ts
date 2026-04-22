@@ -150,12 +150,12 @@ async function countPromptTokens(model: any, prompt: string): Promise<TokenInfo 
 }
 
 // Helper: Generate content with retry logic and model fallback
-async function generateWithFallback(prompt: string, maxRetriesPerModel: number = 2): Promise<any> {
+async function generateWithFallback(prompt: string | any[], maxRetriesPerModel: number = 2): Promise<any> {
     let lastError: Error | null = null;
-    
+
     for (const modelName of AVAILABLE_MODELS) {
         console.log(`🔄 Attempting with model: ${modelName}`);
-        
+
         for (let attempt = 1; attempt <= maxRetriesPerModel; attempt++) {
             try {
                 const model = genAI.getGenerativeModel({ model: modelName });
@@ -165,7 +165,7 @@ async function generateWithFallback(prompt: string, maxRetriesPerModel: number =
             } catch (error: any) {
                 lastError = error;
                 console.warn(`❌ Model ${modelName} attempt ${attempt} failed:`, error.message);
-                
+
                 const isRetryable = error.message?.includes('503') ||
                     error.message?.includes('429') ||
                     error.message?.includes('500') ||
@@ -173,7 +173,7 @@ async function generateWithFallback(prompt: string, maxRetriesPerModel: number =
                     error.message?.includes('504') ||
                     error.message?.includes('timeout') ||
                     error.message?.includes('rate limit');
-                
+
                 if (isRetryable && attempt < maxRetriesPerModel) {
                     const delay = Math.pow(2, attempt - 1) * 1000;
                     console.log(`Retrying ${modelName} in ${delay}ms...`);
@@ -185,7 +185,7 @@ async function generateWithFallback(prompt: string, maxRetriesPerModel: number =
             }
         }
     }
-    
+
     throw new Error(`All Gemini models failed. Last error: ${lastError?.message}`);
 }
 
@@ -196,7 +196,7 @@ function extractJSONFromResponse(rawText: string): any {
         .replace(/^```\s*/i, '')
         .replace(/```\s*$/i, '')
         .trim();
-    
+
     return JSON.parse(jsonText);
 }
 
@@ -288,13 +288,13 @@ Do NOT include any text before or after the JSON. The response must be parseable
 `.trim();
 
         let result;
-        
+
         try {
             console.log('🤖 Starting AI screening with model fallback support...');
             result = await generateWithFallback(prompt, 2);
         } catch (apiError: any) {
             console.error('All Gemini models failed:', apiError);
-            
+
             if (apiError.message.includes('503') || apiError.message.includes('unavailable')) {
                 return res.status(503).json({
                     success: false,
@@ -359,7 +359,7 @@ Do NOT include any text before or after the JSON. The response must be parseable
             const outputTokens = usageMetadata.candidatesTokenCount || usageMetadata.completion_tokens || 0;
             const totalTokens = inputTokens + outputTokens;
             const responseTime = (Date.now() - startTime) / 1000;
-            
+
             console.log(`
 ╔══════════════════════════════════════════════════════════════╗
 ║                   TOKEN USAGE & COST BREAKDOWN               ║
@@ -374,7 +374,7 @@ Do NOT include any text before or after the JSON. The response must be parseable
 
         const shortlistCount = screeningData.shortlistCount || screeningData.shortlist.length;
         const selectionRate = ((shortlistCount / candidates.length) * 100).toFixed(1);
-        
+
         console.log(`
 ╔══════════════════════════════════════════════════════════════╗
 ║                    SCREENING SUMMARY                         ║
@@ -467,6 +467,113 @@ export const getJobScreeningResults = async (req: AuthRequest, res: Response) =>
         return res.status(500).json({
             success: false,
             message: 'Error fetching screening results',
+            error: error.message
+        });
+    }
+};
+
+// @desc    Parse uploaded resume files using Gemini and save candidates
+// @route   POST /api/ai/parse-candidates/:jobId
+// @access  Private
+export const parseAndUploadCandidates = async (req: AuthRequest & { files?: any[] }, res: Response) => {
+    const { jobId } = req.params;
+    const files = req.files;
+
+    if (!files || files.length === 0) {
+        return res.status(400).json({ success: false, message: 'No files uploaded' });
+    }
+
+    try {
+        const job = await Job.findOne({ _id: jobId, recruiter: req.user?._id });
+        if (!job) {
+            return res.status(404).json({ success: false, message: 'Job not found or not authorized' });
+        }
+
+        const addedCandidates = [];
+
+        for (const file of files) {
+            console.log(`Processing file: ${file.originalname} of type ${file.mimetype}`);
+            
+            const prompt = `
+You are an expert AI recruiter assistant. 
+I am providing a document (resume, CV, or dataset) containing candidate information.
+Extract ALL candidates found in this document into a JSON array of objects matching this exact structure:
+
+[
+  {
+    "firstName": "string",
+    "lastName": "string",
+    "email": "string (use a placeholder if missing)",
+    "headline": "string (e.g., Software Engineer)",
+    "location": "string",
+    "bio": "string (brief summary)",
+    "skills": [
+      { "name": "string", "level": "Beginner | Intermediate | Advanced | Expert", "yearsOfExperience": number }
+    ],
+    "experience": [
+      { "company": "string", "role": "string", "startDate": "YYYY-MM", "endDate": "YYYY-MM or Present", "description": "string" }
+    ],
+    "education": [
+      { "institution": "string", "degree": "string", "fieldOfStudy": "string" }
+    ]
+  }
+]
+
+Return ONLY a valid JSON array. Do not include any markdown format like \`\`\`json.
+`;
+            
+            let parts: any[] = [{ text: prompt }];
+
+            // Make sure the mime type is supported. Gemini inline supports pdf, csv, plain text.
+            let mimeType = file.mimetype;
+            parts.push({
+                inlineData: {
+                    data: file.buffer.toString('base64'),
+                    mimeType: mimeType
+                }
+            });
+
+            try {
+                const result = await generateWithFallback(parts, 2);
+                const rawText = result.response.text();
+
+                let parsedCandidates = extractJSONFromResponse(rawText);
+                if (!Array.isArray(parsedCandidates)) {
+                    parsedCandidates = [parsedCandidates];
+                }
+
+                for (let candData of parsedCandidates) {
+                    // Provide default fallbacks to satisfy mongoose schema requirements
+                    if (!candData.firstName) candData.firstName = 'Unknown';
+                    if (!candData.lastName) candData.lastName = 'Candidate';
+                    if (!candData.email) candData.email = 'unknown@example.com';
+                    if (!candData.headline) candData.headline = 'Applicant';
+                    if (!candData.location) candData.location = 'Unknown Location';
+
+                    const candidate = new Candidate({
+                        ...candData,
+                        job: jobId,
+                    });
+                    await candidate.save();
+                    addedCandidates.push(candidate);
+                }
+            } catch (err: any) {
+                console.error(`Failed to parse file ${file.originalname}:`, err.message);
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: `Successfully processed files and added ${addedCandidates.length} candidates.`,
+            addedCandidatesCount: addedCandidates.length,
+            candidates: addedCandidates
+        });
+
+    } catch (error: any) {
+        console.error('Error parsing candidates:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'An unexpected error occurred during document parsing',
             error: error.message
         });
     }

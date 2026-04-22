@@ -170,13 +170,35 @@ export default function CandidatesPage() {
                     <label className="block text-sm font-medium text-foreground mb-2">Upload Files</label>
                     <FileUpload
                       isLoading={isUploading}
-                      onUpload={(files) => {
+                      onUpload={async (files) => {
+                        if (!bulkUploadJobId) {
+                          alert('Please select a target job profile first');
+                          return;
+                        }
+
                         setIsUploading(true);
-                        setTimeout(() => {
-                          setIsUploading(false);
+                        try {
+                          const formData = new FormData();
+                          files.forEach((file) => formData.append('files', file));
+
+                          const response = await api.post(`/ai/parse-candidates/${bulkUploadJobId}`, formData, {
+                            headers: {
+                              'Content-Type': 'multipart/form-data',
+                            },
+                          });
+
+                          alert(`Successfully processed and added ${response.data.addedCandidatesCount} candidates to the pipeline.`);
                           setIsBulkUploadOpen(false);
-                          alert(`Successfully processed ${files.length} documents. Candidates have been added to the pipeline.`);
-                        }, 3000);
+
+                          // Refresh candidates loop
+                          const candidatesRes = await api.get('/candidates');
+                          setCandidates(candidatesRes.data);
+                        } catch (error: any) {
+                          console.error('File upload error:', error);
+                          alert(error.response?.data?.message || 'Failed to upload and parse files');
+                        } finally {
+                          setIsUploading(false);
+                        }
                       }}
                     />
                   </div>
