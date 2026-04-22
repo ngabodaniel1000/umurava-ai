@@ -3,6 +3,8 @@ import Candidate from '../models/candidateModel';
 import Job from '../models/jobModel';
 import ScreeningResult from '../models/screeningModel';
 import { Request, Response } from 'express';
+import * as xlsx from 'xlsx';
+import mammoth from 'mammoth';
 
 
 
@@ -493,7 +495,7 @@ export const parseAndUploadCandidates = async (req: AuthRequest & { files?: any[
 
         for (const file of files) {
             console.log(`Processing file: ${file.originalname} of type ${file.mimetype}`);
-            
+
             const prompt = `
 You are an expert AI recruiter assistant. 
 I am providing a document (resume, CV, or dataset) containing candidate information.
@@ -503,35 +505,75 @@ Extract ALL candidates found in this document into a JSON array of objects match
   {
     "firstName": "string",
     "lastName": "string",
-    "email": "string (use a placeholder if missing)",
-    "headline": "string (e.g., Software Engineer)",
+    "email": "string",
+    "headline": "string",
+    "bio": "string",
     "location": "string",
-    "bio": "string (brief summary)",
     "skills": [
       { "name": "string", "level": "Beginner | Intermediate | Advanced | Expert", "yearsOfExperience": number }
     ],
+    "languages": [
+      { "name": "string", "proficiency": "Basic | Conversational | Fluent | Native" }
+    ],
     "experience": [
-      { "company": "string", "role": "string", "startDate": "YYYY-MM", "endDate": "YYYY-MM or Present", "description": "string" }
+      { "company": "string", "role": "string", "startDate": "YYYY-MM", "endDate": "YYYY-MM | Present", "description": "string", "technologies": ["string"], "isCurrent": boolean }
     ],
     "education": [
-      { "institution": "string", "degree": "string", "fieldOfStudy": "string" }
-    ]
+      { "institution": "string", "degree": "string", "fieldOfStudy": "string", "startYear": number, "endYear": number }
+    ],
+    "certifications": [
+      { "name": "string", "issuer": "string", "issueDate": "YYYY-MM" }
+    ],
+    "projects": [
+      { "name": "string", "description": "string", "technologies": ["string"], "role": "string", "link": "string", "startDate": "YYYY-MM", "endDate": "YYYY-MM" }
+    ],
+    "availability": {
+      "status": "Available | Open to Opportunities | Not Available",
+      "type": "Full-time | Part-time | Contract",
+      "startDate": "YYYY-MM-DD"
+    },
+    "socialLinks": {
+      "linkedin": "string",
+      "github": "string",
+      "portfolio": "string",
+      "twitter": "string",
+      "other": "string"
+    }
   }
 ]
 
 Return ONLY a valid JSON array. Do not include any markdown format like \`\`\`json.
 `;
-            
-            let parts: any[] = [{ text: prompt }];
 
-            // Make sure the mime type is supported. Gemini inline supports pdf, csv, plain text.
-            let mimeType = file.mimetype;
-            parts.push({
-                inlineData: {
-                    data: file.buffer.toString('base64'),
-                    mimeType: mimeType
-                }
-            });
+            let filePart: any;
+            const mimeType = file.mimetype;
+
+            if (mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || file.originalname.endsWith('.xlsx')) {
+                const workbook = xlsx.read(file.buffer, { type: 'buffer' });
+                let allSheetsContent = '';
+
+                workbook.SheetNames.forEach(sheetName => {
+                    const worksheet = workbook.Sheets[sheetName];
+                    const csv = xlsx.utils.sheet_to_csv(worksheet);
+                    if (csv.trim()) {
+                        allSheetsContent += `--- SHEET: ${sheetName} ---\n${csv}\n\n`;
+                    }
+                });
+
+                filePart = { text: `[DATASET CONTENT FROM ALL SHEETS]\n${allSheetsContent}` };
+            } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.originalname.endsWith('.docx')) {
+                const result = await mammoth.extractRawText({ buffer: file.buffer });
+                filePart = { text: `[DOCUMENT CONTENT]\n${result.value}` };
+            } else {
+                filePart = {
+                    inlineData: {
+                        data: file.buffer.toString('base64'),
+                        mimeType: mimeType === 'application/octet-stream' ? 'application/pdf' : mimeType // Fallback for some uploads
+                    }
+                };
+            }
+
+            let parts: any[] = [{ text: prompt }, filePart];
 
             try {
                 const result = await generateWithFallback(parts, 2);
