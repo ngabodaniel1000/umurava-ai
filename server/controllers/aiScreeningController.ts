@@ -3,9 +3,10 @@ import Candidate from '../models/candidateModel';
 import Job from '../models/jobModel';
 import ScreeningResult from '../models/screeningModel';
 import { Request, Response } from 'express';
+import { ParamsDictionary } from 'express-serve-static-core';
 
-// Extend Express Request type to include user
-interface AuthRequest extends Request {
+// Extend Express Request type to include user and proper generics
+interface AuthRequest<P = ParamsDictionary, ResBody = any, ReqBody = any, ReqQuery = any> extends Request<P, ResBody, ReqBody, ReqQuery> {
     user?: {
         _id: string;
         email: string;
@@ -194,7 +195,7 @@ function extractJSONFromResponse(rawText: string): any {
     return JSON.parse(jsonText);
 }
 
-// @desc    Run AI screening for a job using Gemini with model fallback
+// @desc    Run AI screening for a job with Gemini using model fallback
 // @route   POST /api/ai/screen/:jobId
 // @access  Private
 export const runAIScreening = async (req: AuthRequest, res: Response) => {
