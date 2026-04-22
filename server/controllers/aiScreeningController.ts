@@ -1,41 +1,111 @@
-import { Response } from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import Candidate from '../models/candidateModel';
 import Job from '../models/jobModel';
 import ScreeningResult from '../models/screeningModel';
-import { AuthRequest } from '../middleware/authMiddleware';
+import { Request, Response } from 'express';
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
+// Extend Express Request type to include user
+interface AuthRequest extends Request {
+    user?: {
+        _id: string;
+        email: string;
+        role: string;
+    };
+}
 
-// Define model fallback order (prioritizing fastest/most capable first)
-const MODEL_FALLBACK_ORDER = [
-    'gemini-2.5-flash',        // Latest fast model (working for you)
-    'gemini-2.0-flash',        // Stable fallback
-    'gemini-1.5-flash',        // Older stable model
-    'gemini-3.0-flash-preview', // Preview model (may have limits)
-    'gemini-pro'                // Last resort
-];
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+
+// Define available models with fallback priority
+const AVAILABLE_MODELS = [
+    'gemini-3.1-flash-lite-preview',
+    'gemini-3-flash-preview',
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite',
+    'gemini-robotics-er-1.6-preview'
+] as const;
+
+type ModelName = typeof AVAILABLE_MODELS[number];
+
+// Interfaces for type safety
+interface CandidateProfile {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    headline?: string;
+    location?: string;
+    bio?: string;
+    skills?: Array<{ name: string; level: string; yearsOfExperience: number }>;
+    experience?: Array<{ role: string; company: string; startDate: string; endDate?: string; description?: string }>;
+    education?: Array<{ degree: string; fieldOfStudy?: string; institution: string }>;
+    certifications?: Array<{ name: string; issuer: string }>;
+    projects?: Array<{ name: string; description?: string; technologies?: string[] }>;
+    availability?: { status: string; type?: string };
+}
+
+interface ScreeningShortlistItem {
+    rank: number;
+    candidateId: string;
+    candidateName: string;
+    matchScore: number;
+    recommendation: 'Highly Recommended' | 'Recommended' | 'Consider' | 'Borderline';
+    strengths: string[];
+    gaps: string[];
+    reasoning: string;
+}
+
+interface ScreeningResponse {
+    jobTitle: string;
+    totalCandidatesAnalyzed: number;
+    shortlistCount: number;
+    screeningDate: string;
+    shortlist: ScreeningShortlistItem[];
+}
+
+interface TokenInfo {
+    totalTokens: number;
+    billableCharacters?: number;
+    promptTokensDetails?: any[];
+}
+
+interface ScreeningResultDocument {
+    job: string;
+    jobTitle: string;
+    totalCandidatesAnalyzed: number;
+    shortlistCount: number;
+    shortlist: Array<{
+        rank: number;
+        candidate: string;
+        candidateName: string;
+        matchScore: number;
+        recommendation: string;
+        strengths: string[];
+        gaps: string[];
+        reasoning: string;
+        status: string;
+    }>;
+    save(): Promise<any>;
+}
 
 // Helper: build a concise but rich text representation of a candidate profile
-function formatCandidateProfile(candidate: any, index: number) {
+function formatCandidateProfile(candidate: CandidateProfile, index: number): string {
     const skills = (candidate.skills || [])
-        .map((s: any) => `${s.name} (${s.level}, ${s.yearsOfExperience}yr)`)
+        .map((s) => `${s.name} (${s.level}, ${s.yearsOfExperience}yr)`)
         .join(', ') || 'N/A';
 
     const experience = (candidate.experience || [])
-        .map((e: any) => `${e.role} at ${e.company} (${e.startDate} – ${e.endDate || 'Present'}): ${e.description || ''}`)
+        .map((e) => `${e.role} at ${e.company} (${e.startDate} – ${e.endDate || 'Present'}): ${e.description || ''}`)
         .join(' | ') || 'N/A';
 
     const education = (candidate.education || [])
-        .map((ed: any) => `${ed.degree} in ${ed.fieldOfStudy || 'N/A'} from ${ed.institution}`)
+        .map((ed) => `${ed.degree} in ${ed.fieldOfStudy || 'N/A'} from ${ed.institution}`)
         .join(', ') || 'N/A';
 
     const certifications = (candidate.certifications || [])
-        .map((c: any) => `${c.name} by ${c.issuer}`)
+        .map((c) => `${c.name} by ${c.issuer}`)
         .join(', ') || 'None';
 
     const projects = (candidate.projects || [])
-        .map((p: any) => `${p.name}: ${p.description || ''} [${(p.technologies || []).join(', ')}]`)
+        .map((p) => `${p.name}: ${p.description || ''} [${(p.technologies || []).join(', ')}]`)
         .join(' | ') || 'None';
 
     const availability = candidate.availability
@@ -46,8 +116,8 @@ function formatCandidateProfile(candidate: any, index: number) {
 --- CANDIDATE ${index + 1} ---
 ID: ${candidate._id}
 Name: ${candidate.firstName} ${candidate.lastName}
-Headline: ${candidate.headline}
-Location: ${candidate.location}
+Headline: ${candidate.headline || 'N/A'}
+Location: ${candidate.location || 'N/A'}
 Bio: ${candidate.bio || 'N/A'}
 Skills: ${skills}
 Experience: ${experience}
@@ -59,7 +129,7 @@ Availability: ${availability}
 }
 
 // Helper to count tokens in a prompt without sending to API
-async function countPromptTokens(model: any, prompt: string) {
+async function countPromptTokens(model: any, prompt: string): Promise<TokenInfo | null> {
     try {
         const countResponse = await model.countTokens(prompt);
         return {
@@ -73,130 +143,82 @@ async function countPromptTokens(model: any, prompt: string) {
     }
 }
 
-// Helper: Generate content with retry logic
-async function generateWithRetry(model: any, prompt: string, maxRetries = 3) {
-    let lastError: any;
-
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-            const result = await model.generateContent(prompt);
-            return result;
-        } catch (error: any) {
-            lastError = error;
-
-            // Check if it's a retryable error
-            const isRetryable = error.message.includes('503') ||
-                error.message.includes('429') ||
-                error.message.includes('500') ||
-                error.message.includes('502') ||
-                error.message.includes('504');
-
-            if (!isRetryable || attempt === maxRetries) {
-                throw error;
-            }
-
-            // Exponential backoff: 1s, 2s, 4s
-            const delay = Math.pow(2, attempt - 1) * 1000;
-            console.log(`Attempt ${attempt} failed, retrying in ${delay}ms...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-        }
-    }
-
-    throw lastError;
-}
-
-// NEW: Helper to get a working model with fallback support
-async function getWorkingModel(prompt: string, candidateCount: number) {
-    let lastError: any = null;
-
-    for (const modelName of MODEL_FALLBACK_ORDER) {
-        try {
-            console.log(`🔄 Attempting to use model: ${modelName}...`);
-
-            const model = genAI.getGenerativeModel({
-                model: modelName,
-                generationConfig: {
-                    temperature: 0.2,
-                    maxOutputTokens: 4000,
-                    topP: 0.95,
-                    topK: 40,
-                }
-            });
-
-            // Test the model with a simple count tokens or generate request
+// Helper: Generate content with retry logic and model fallback
+async function generateWithFallback(prompt: string, maxRetriesPerModel: number = 2): Promise<any> {
+    let lastError: Error | null = null;
+    
+    for (const modelName of AVAILABLE_MODELS) {
+        console.log(`🔄 Attempting with model: ${modelName}`);
+        
+        for (let attempt = 1; attempt <= maxRetriesPerModel; attempt++) {
             try {
-                await model.countTokens('test');
-            } catch (testError: any) {
-                if (testError.message.includes('404') || testError.message.includes('not found')) {
-                    console.log(`   Model ${modelName} not available, trying next...`);
-                    continue;
+                const model = genAI.getGenerativeModel({ model: modelName });
+                const result = await model.generateContent(prompt);
+                console.log(`✅ Success with model: ${modelName} on attempt ${attempt}`);
+                return result;
+            } catch (error: any) {
+                lastError = error;
+                console.warn(`❌ Model ${modelName} attempt ${attempt} failed:`, error.message);
+                
+                const isRetryable = error.message?.includes('503') ||
+                    error.message?.includes('429') ||
+                    error.message?.includes('500') ||
+                    error.message?.includes('502') ||
+                    error.message?.includes('504') ||
+                    error.message?.includes('timeout') ||
+                    error.message?.includes('rate limit');
+                
+                if (isRetryable && attempt < maxRetriesPerModel) {
+                    const delay = Math.pow(2, attempt - 1) * 1000;
+                    console.log(`Retrying ${modelName} in ${delay}ms...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                } else {
+                    console.log(`Moving to next model after ${attempt} attempts with ${modelName}`);
+                    break;
                 }
             }
-
-            console.log(`✅ Successfully connected to model: ${modelName}`);
-            return { model, modelName };
-
-        } catch (error: any) {
-            lastError = error;
-            console.log(`❌ Model ${modelName} failed: ${error.message}`);
-            continue;
         }
     }
-
-    throw new Error(`All Gemini models failed. Last error: ${lastError?.message || 'Unknown error'}`);
+    
+    throw new Error(`All Gemini models failed. Last error: ${lastError?.message}`);
 }
 
-// NEW: Helper to extract token usage safely
-function extractTokenUsage(usageMetadata: any, modelName: string) {
-    if (!usageMetadata) {
-        console.warn(`⚠️ No usage metadata returned from ${modelName}`);
-        return null;
-    }
-
-    const inputTokens = usageMetadata.promptTokenCount ||
-        usageMetadata.prompt_tokens ||
-        usageMetadata.inputTokenCount || 0;
-
-    const outputTokens = usageMetadata.candidatesTokenCount ||
-        usageMetadata.completion_tokens ||
-        usageMetadata.outputTokenCount || 0;
-
-    let totalTokens = usageMetadata.totalTokenCount ||
-        usageMetadata.total_tokens ||
-        (inputTokens + outputTokens);
-
-    if (totalTokens !== inputTokens + outputTokens) {
-        console.log(`   Correcting total tokens from ${totalTokens} to ${inputTokens + outputTokens}`);
-        totalTokens = inputTokens + outputTokens;
-    }
-
-    return { inputTokens, outputTokens, totalTokens };
+// Helper to extract JSON from AI response
+function extractJSONFromResponse(rawText: string): any {
+    const jsonText = rawText
+        .replace(/^```json\s*/i, '')
+        .replace(/^```\s*/i, '')
+        .replace(/```\s*$/i, '')
+        .trim();
+    
+    return JSON.parse(jsonText);
 }
 
-// @desc    Run AI screening for a job using Gemini
+// @desc    Run AI screening for a job using Gemini with model fallback
 // @route   POST /api/ai/screen/:jobId
 // @access  Private
-const runAIScreening = async (req: AuthRequest, res: Response) => {
-    const startTime = Date.now(); // Track response time
+export const runAIScreening = async (req: AuthRequest, res: Response) => {
+    const startTime = Date.now();
     const { jobId } = req.params;
     const { topN = 10, saveResults = false } = req.body;
 
-    // Verify job belongs to recruiter
-    const job: any = await Job.findOne({ _id: jobId, recruiter: req.user?._id });
-    if (!job) {
-        return res.status(404).json({ message: 'Job not found or not authorized' });
-    }
+    try {
+        // Verify job belongs to recruiter
+        const job = await Job.findOne({ _id: jobId, recruiter: req.user?._id });
+        if (!job) {
+            return res.status(404).json({ message: 'Job not found or not authorized' });
+        }
 
-    // Fetch all candidates for this job
-    const candidates = await Candidate.find({ job: jobId });
-    if (!candidates || candidates.length === 0) {
-        return res.status(400).json({ message: 'No candidates found for this job' });
-    }
+        // Fetch all candidates for this job
+        const candidates = await Candidate.find({ job: jobId }) as CandidateProfile[];
+        if (!candidates || candidates.length === 0) {
+            return res.status(400).json({ message: 'No candidates found for this job' });
+        }
 
-    // Build the prompt
-    const jobDescription = `
+        // Build the prompt
+        const jobDescription = `
 Job Title: ${job.title}
-Department: ${job.department}
+Department: ${job.department || 'N/A'}
 Location: ${job.location}
 Required Experience: ${job.experience}
 Required Skills: ${(job.skillsNeeded || []).join(', ')}
@@ -204,21 +226,20 @@ Job Description: ${job.description}
 Salary Range: ${job.salaryRange ? `$${job.salaryRange.min} – $${job.salaryRange.max}` : 'Not specified'}
 `.trim();
 
-    const candidateProfiles = candidates
-        .map((c, i) => formatCandidateProfile(c, i))
-        .join('\n\n');
+        const candidateProfiles = candidates
+            .map((c, i) => formatCandidateProfile(c, i))
+            .join('\n\n');
 
-    // Estimate token count
-    const estimatedTokens = (jobDescription.length + candidateProfiles.length + 2000) / 4;
-    console.log(`\n📊 PRE-SCREENING ESTIMATE:`);
-    console.log(`   Estimated prompt tokens: ~${Math.round(estimatedTokens)}`);
-    console.log(`   Candidates to analyze: ${candidates.length}`);
+        const estimatedTokens = (jobDescription.length + candidateProfiles.length + 2000) / 4;
+        console.log(`\n📊 PRE-SCREENING ESTIMATE:`);
+        console.log(`   Estimated prompt tokens: ~${Math.round(estimatedTokens)}`);
+        console.log(`   Candidates to analyze: ${candidates.length}`);
 
-    if (estimatedTokens > 8000) {
-        console.warn('⚠️ Prompt may exceed model limits. Consider reducing candidates or using batch processing.');
-    }
+        if (estimatedTokens > 8000) {
+            console.warn('⚠️ Prompt may exceed model limits. Consider reducing candidates or using batch processing.');
+        }
 
-    const prompt = `
+        const prompt = `
 You are an expert AI recruiter assistant for Umurava, an AI-powered talent screening platform.
 Your task is to analyze ALL candidates listed below and produce a ranked shortlist of the TOP ${topN} best matches for the given job.
 
@@ -260,234 +281,187 @@ Return ONLY a valid JSON object with this structure:
 Do NOT include any text before or after the JSON. The response must be parseable by JSON.parse().
 `.trim();
 
-    let result: any;
-    let usedModel: string | null = null;
-    let tokenInfo: any = null;
-
-    try {
-        const { model, modelName } = await getWorkingModel(prompt, candidates.length);
-        usedModel = modelName;
-
-        console.log('\n🔢 COUNTING PROMPT TOKENS...');
+        let result;
+        
         try {
-            tokenInfo = await countPromptTokens(model, prompt);
-
-            if (tokenInfo) {
-                const promptInputCost = (tokenInfo.totalTokens / 1_000_000) * 0.075;
-                console.log(`
-╔══════════════════════════════════════════════════════════════╗
-║                    PROMPT TOKEN ANALYSIS                     ║
-╠══════════════════════════════════════════════════════════════╣
-║ Model used:          ${usedModel!.padEnd(38)}║
-║ Total prompt tokens: ${tokenInfo.totalTokens.toString().padEnd(38)}║
-║ Billable characters: ${tokenInfo.billableCharacters.toString().padEnd(38)}║
-║ Estimated cost:      $${promptInputCost.toFixed(6).padEnd(38)}║
-╚══════════════════════════════════════════════════════════════╝
-                `);
-
-                if (tokenInfo.totalTokens > 1000000) {
-                    return res.status(400).json({
-                        success: false,
-                        message: `Prompt too large: ${tokenInfo.totalTokens} tokens exceeds 1M limit. Please reduce number of candidates.`,
-                        tokenCount: tokenInfo.totalTokens,
-                        candidateCount: candidates.length
-                    });
-                }
-
-                if (tokenInfo.totalTokens > 500000) {
-                    console.warn(`⚠️ Large prompt detected (${tokenInfo.totalTokens} tokens). Consider reducing candidates for faster processing.`);
-                }
+            console.log('🤖 Starting AI screening with model fallback support...');
+            result = await generateWithFallback(prompt, 2);
+        } catch (apiError: any) {
+            console.error('All Gemini models failed:', apiError);
+            
+            if (apiError.message.includes('503') || apiError.message.includes('unavailable')) {
+                return res.status(503).json({
+                    success: false,
+                    message: 'The AI service is currently experiencing high demand. Please try again in a few moments.',
+                    retryAfter: '5 seconds',
+                    modelsAttempted: AVAILABLE_MODELS
+                });
             }
-        } catch (countError) {
-            console.log('ℹ️ Token counting skipped (not supported by this model)');
+
+            if (apiError.message.includes('429') || apiError.message.includes('rate limit')) {
+                return res.status(429).json({
+                    success: false,
+                    message: 'Rate limit exceeded on all models. Please wait before trying again.',
+                    modelsAttempted: AVAILABLE_MODELS
+                });
+            }
+
+            if (apiError.message.includes('context length') || apiError.message.includes('token')) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Too many candidates to process at once. Please reduce the number of candidates.',
+                    tokenCount: estimatedTokens,
+                    candidateCount: candidates.length
+                });
+            }
+
+            return res.status(503).json({
+                success: false,
+                message: 'The AI service is currently unavailable. Please wait a moment and try again.',
+                error: apiError.message,
+                modelsAttempted: AVAILABLE_MODELS
+            });
         }
 
-        console.log(`🤖 Sending to Gemini AI (${usedModel})...`);
-        result = await generateWithRetry(model, prompt);
+        const rawText = result.response.text();
+        console.log('📝 Raw AI response length:', rawText.length, 'characters');
+
+        let screeningData: ScreeningResponse;
+        try {
+            screeningData = extractJSONFromResponse(rawText);
+        } catch (parseErr: any) {
+            console.error('Gemini JSON parse error:', parseErr.message);
+            console.error('Raw response preview:', rawText.substring(0, 500));
+            return res.status(500).json({
+                success: false,
+                message: 'AI returned an invalid response. Please try again.',
+                rawPreview: rawText.substring(0, 300),
+            });
+        }
+
+        if (!screeningData.shortlist || !Array.isArray(screeningData.shortlist)) {
+            console.error('Invalid response structure:', screeningData);
+            return res.status(500).json({
+                success: false,
+                message: 'AI returned an unexpected response structure. Please try again.'
+            });
+        }
 
         const usageMetadata = result.response.usageMetadata;
-
         if (usageMetadata) {
-            const tokenData = extractTokenUsage(usageMetadata, usedModel!);
-
-            if (tokenData) {
-                const { inputTokens, outputTokens, totalTokens } = tokenData;
-
-                let INPUT_COST_PER_1M = 0.075;
-                let OUTPUT_COST_PER_1M = 0.30;
-
-                if (usedModel!.includes('pro')) {
-                    INPUT_COST_PER_1M = 0.50;
-                    OUTPUT_COST_PER_1M = 1.50;
-                } else if (usedModel!.includes('preview')) {
-                    INPUT_COST_PER_1M = 0.10;
-                    OUTPUT_COST_PER_1M = 0.40;
-                }
-
-                const inputCost = (inputTokens / 1_000_000) * INPUT_COST_PER_1M;
-                const outputCost = (outputTokens / 1_000_000) * OUTPUT_COST_PER_1M;
-                const totalCost = inputCost + outputCost;
-
-                const responseTime = (Date.now() - startTime) / 1000;
-
-                console.log(`
+            const inputTokens = usageMetadata.promptTokenCount || usageMetadata.prompt_tokens || 0;
+            const outputTokens = usageMetadata.candidatesTokenCount || usageMetadata.completion_tokens || 0;
+            const totalTokens = inputTokens + outputTokens;
+            const responseTime = (Date.now() - startTime) / 1000;
+            
+            console.log(`
 ╔══════════════════════════════════════════════════════════════╗
-║              ACTUAL TOKEN USAGE & COST BREAKDOWN             ║
+║                   TOKEN USAGE & COST BREAKDOWN               ║
 ╠══════════════════════════════════════════════════════════════╣
-║ Model used:          ${usedModel!.padEnd(38)}║
-║ INPUT TOKENS:        ${inputTokens.toString().padEnd(38)}║
-║ OUTPUT TOKENS:       ${outputTokens.toString().padEnd(38)}║
-║ TOTAL TOKENS:        ${totalTokens.toString().padEnd(38)}║
-╠══════════════════════════════════════════════════════════════╣
-║ Input cost:          $${inputCost.toFixed(6).padEnd(38)}║
-║ Output cost:         $${outputCost.toFixed(6).padEnd(38)}║
-║ TOTAL COST:          $${totalCost.toFixed(6).padEnd(38)}║
-╠══════════════════════════════════════════════════════════════╣
-║ Cost per candidate:  $${(totalCost / candidates.length).toFixed(6).padEnd(38)}║
-║ Response time:       ${responseTime.toFixed(2)}s${' '.repeat(35 - responseTime.toFixed(2).length - 1)}║
+║ INPUT TOKENS:          ${inputTokens.toString().padEnd(38)}║
+║ OUTPUT TOKENS:         ${outputTokens.toString().padEnd(38)}║
+║ TOTAL TOKENS:          ${totalTokens.toString().padEnd(38)}║
+║ Response time:         ${responseTime.toFixed(2)}s${' '.repeat(35 - responseTime.toFixed(2).length - 1)}║
 ╚══════════════════════════════════════════════════════════════╝
-                `);
-
-                const tokensPerCandidateInput = (inputTokens / candidates.length).toFixed(1);
-                const tokensPerCandidateOutput = (outputTokens / candidates.length).toFixed(1);
-                const outputInputRatio = ((outputTokens / inputTokens) * 100).toFixed(1);
-
-                console.log(`
-╔══════════════════════════════════════════════════════════════╗
-║                   TOKEN EFFICIENCY METRICS                   ║
-╠══════════════════════════════════════════════════════════════╣
-║ Tokens per candidate (input):  ${tokensPerCandidateInput.padEnd(38)}║
-║ Tokens per candidate (output): ${tokensPerCandidateOutput.padEnd(38)}║
-║ Output/Input ratio:            ${outputInputRatio}%${' '.repeat(38 - outputInputRatio.length - 1)}║
-╚══════════════════════════════════════════════════════════════╝
-                `);
-
-                res.setHeader('X-Model-Used', usedModel!);
-                res.setHeader('X-Token-Usage-Input', inputTokens);
-                res.setHeader('X-Token-Usage-Output', outputTokens);
-                res.setHeader('X-Token-Usage-Total', totalTokens);
-                res.setHeader('X-Token-Cost', totalCost.toFixed(6));
-                res.setHeader('X-Response-Time-Seconds', responseTime.toFixed(2));
-            }
+            `);
         }
 
-    } catch (apiError: any) {
-        console.error('Gemini API Error:', apiError);
-
-        if (apiError.message.includes('All Gemini models failed')) {
-            return res.status(503).json({
-                success: false,
-                message: 'All AI models are currently unavailable. Please try again later.',
-                error: 'No available AI models'
-            });
-        }
-
-        if (apiError.message.includes('503')) {
-            return res.status(503).json({
-                success: false,
-                message: 'Service high demand. Try again in a few moments.'
-            });
-        }
-
-        return res.status(503).json({
-            success: false,
-            message: 'AI service unavailable.',
-            error: apiError.message
-        });
-    }
-
-    const rawText = result.response.text();
-
-    const jsonText = rawText
-        .replace(/^```json\s*/i, '')
-        .replace(/^```\s*/i, '')
-        .replace(/```\s*$/i, '')
-        .trim();
-
-    let screeningData: any;
-    try {
-        screeningData = JSON.parse(jsonText);
-    } catch (parseErr: any) {
-        return res.status(500).json({
-            success: false,
-            message: 'AI invalid response.',
-        });
-    }
-
-    const shortlistCount = screeningData.shortlistCount || screeningData.shortlist.length;
-    const selectionRate = ((shortlistCount / candidates.length) * 100).toFixed(1);
-
-    console.log(`
+        const shortlistCount = screeningData.shortlistCount || screeningData.shortlist.length;
+        const selectionRate = ((shortlistCount / candidates.length) * 100).toFixed(1);
+        
+        console.log(`
 ╔══════════════════════════════════════════════════════════════╗
 ║                    SCREENING SUMMARY                         ║
 ╠══════════════════════════════════════════════════════════════╣
-║ Model used:          ${usedModel!.padEnd(38)}║
-║ Candidates analyzed: ${candidates.length.toString().padEnd(38)}║
-║ Shortlisted:         ${shortlistCount.toString().padEnd(38)}║
-║ Selection rate:      ${selectionRate}%${' '.repeat(38 - selectionRate.length - 1)}║
+║ Candidates analyzed:    ${candidates.length.toString().padEnd(38)}║
+║ Shortlisted:           ${shortlistCount.toString().padEnd(38)}║
+║ Selection rate:        ${selectionRate}%${' '.repeat(38 - selectionRate.length - 1)}║
 ╚══════════════════════════════════════════════════════════════╝
-    `);
+        `);
 
-    if (saveResults && screeningData.shortlist) {
-        const statusMap: any = {
-            'Highly Recommended': 'passed',
-            'Recommended': 'passed',
-            'Consider': 'review',
-            'Borderline': 'review',
-        };
+        // Optionally persist results to DB
+        if (saveResults && screeningData.shortlist) {
+            const statusMap: Record<string, string> = {
+                'Highly Recommended': 'passed',
+                'Recommended': 'passed',
+                'Consider': 'review',
+                'Borderline': 'review',
+            };
 
-        const shortListItems = screeningData.shortlist.map((item: any) => ({
-            rank: item.rank,
-            candidate: item.candidateId,
-            candidateName: item.candidateName,
-            matchScore: item.matchScore,
-            recommendation: item.recommendation,
-            strengths: item.strengths || [],
-            gaps: item.gaps || [],
-            reasoning: item.reasoning,
-            status: statusMap[item.recommendation] || 'review',
-            modelUsed: usedModel
-        }));
+            const shortListItems = screeningData.shortlist.map(item => ({
+                rank: item.rank,
+                candidate: item.candidateId,
+                candidateName: item.candidateName,
+                matchScore: item.matchScore,
+                recommendation: item.recommendation,
+                strengths: item.strengths || [],
+                gaps: item.gaps || [],
+                reasoning: item.reasoning,
+                status: statusMap[item.recommendation] || 'review'
+            }));
 
-        const existingResult = await ScreeningResult.findOne({ job: jobId });
+            const existingResult = await ScreeningResult.findOne({ job: jobId }) as ScreeningResultDocument | null;
 
-        if (existingResult) {
-            existingResult.jobTitle = screeningData.jobTitle;
-            existingResult.totalCandidatesAnalyzed = screeningData.totalCandidatesAnalyzed;
-            existingResult.shortlistCount = screeningData.shortlistCount;
-            existingResult.shortlist = shortListItems;
-            await existingResult.save();
-        } else {
-            const newResult = new ScreeningResult({
-                job: jobId,
-                jobTitle: screeningData.jobTitle,
-                totalCandidatesAnalyzed: screeningData.totalCandidatesAnalyzed,
-                shortlistCount: screeningData.shortlistCount,
-                shortlist: shortListItems,
-            });
-            await newResult.save();
+            if (existingResult) {
+                existingResult.jobTitle = screeningData.jobTitle;
+                existingResult.totalCandidatesAnalyzed = screeningData.totalCandidatesAnalyzed;
+                existingResult.shortlistCount = screeningData.shortlistCount;
+                existingResult.shortlist = shortListItems;
+                await existingResult.save();
+            } else {
+                const newResult = new ScreeningResult({
+                    job: jobId,
+                    jobTitle: screeningData.jobTitle,
+                    totalCandidatesAnalyzed: screeningData.totalCandidatesAnalyzed,
+                    shortlistCount: screeningData.shortlistCount,
+                    shortlist: shortListItems
+                });
+                await newResult.save();
+            }
+            console.log(`💾 Saved screening results for job ${jobId} to database`);
         }
-        console.log(`💾 Saved results for job ${jobId} to database (using ${usedModel})`);
-    }
 
-    return res.json({
-        success: true,
-        data: screeningData,
-    });
+        return res.json({
+            success: true,
+            data: screeningData,
+            modelInfo: {
+                modelsAttempted: AVAILABLE_MODELS,
+                message: 'Automatic model fallback was used to ensure successful screening'
+            }
+        });
+
+    } catch (error: any) {
+        console.error('Unexpected error in runAIScreening:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'An unexpected error occurred during screening',
+            error: error.message
+        });
+    }
 };
 
-const getJobScreeningResults = async (req: AuthRequest, res: Response) => {
+// @desc    Get saved screening results for a job
+// @route   GET /api/ai/screen/:jobId/results
+// @access  Private
+export const getJobScreeningResults = async (req: AuthRequest, res: Response) => {
     const { jobId } = req.params;
 
-    const job = await Job.findOne({ _id: jobId, recruiter: req.user?._id });
-    if (!job) {
-        return res.status(404).json({ message: 'Job not found or not authorized' });
+    try {
+        const job = await Job.findOne({ _id: jobId, recruiter: req.user?._id });
+        if (!job) {
+            return res.status(404).json({ message: 'Job not found or not authorized' });
+        }
+
+        const result = await ScreeningResult.findOne({ job: jobId })
+            .populate('shortlist.candidate', 'firstName lastName email headline location skills');
+
+        return res.json(result ? [result] : []);
+    } catch (error: any) {
+        console.error('Error fetching screening results:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Error fetching screening results',
+            error: error.message
+        });
     }
-
-    const result = await ScreeningResult.findOne({ job: jobId })
-        .populate('shortlist.candidate', 'firstName lastName email headline location skills');
-
-    return res.json(result ? [result] : []);
 };
-
-export { runAIScreening, getJobScreeningResults };
