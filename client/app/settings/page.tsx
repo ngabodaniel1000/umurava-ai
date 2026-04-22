@@ -137,29 +137,7 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        {/* Notification Settings */}
-        <Card className="p-8 bg-card border-border mb-6">
-          <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center gap-2">
-            <Bell className="w-6 h-6" />
-            Notifications
-          </h2>
-
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-border">
-              <div>
-                <p className="font-semibold text-foreground">Email Notifications</p>
-                <p className="text-sm text-muted-foreground mt-1">Receive updates on screening progress</p>
-              </div>
-              <input
-                type="checkbox"
-                checked={formData.notifications}
-                onChange={(e) => setFormData({ ...formData, notifications: e.target.checked })}
-                className="w-5 h-5 accent-accent cursor-pointer"
-              />
-            </div>
-          </div>
-        </Card>
-
+        
         {/* Danger Zone */}
         <Card className="p-8 bg-red-500/5 border-red-500/20">
           <h2 className="text-2xl font-bold text-red-400 mb-4 flex items-center gap-2">
