@@ -49,55 +49,62 @@ export function BottomNav() {
                 // Only visible on small screens
                 'md:hidden',
                 // Layout
-                'fixed bottom-0 left-0 w-full h-[60px] z-50',
-                'flex justify-around items-center',
+                'fixed bottom-0 left-0 w-full z-50',
                 // Styling
-                'bg-transparent border-t border-border/50 backdrop-blur-md',
+                'bg-background/95 border-t border-border',
+                'backdrop-blur-md',
                 'shadow-[0_-1px_8px_rgba(0,0,0,0.04)]',
             )}
         >
-            {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive =
-                    pathname === item.href || pathname.startsWith(item.href + '/');
+            <div className="flex justify-around items-center h-[70px]">
+                {navItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive =
+                        pathname === item.href || pathname.startsWith(item.href + '/');
 
-                return (
-                    <Link
-                        key={item.href}
-                        href={item.href}
-                        aria-label={item.label}
-                        className={cn(
-                            // Large touch area
-                            'flex items-center justify-center',
-                            'min-w-[44px] min-h-[44px] w-full h-full',
-                            // Smooth transition
-                            'transition-all duration-200 ease-in-out',
-                            // Colors
-                            isActive
-                                ? 'text-accent-foreground'
-                                : 'text-muted-foreground',
-                        )}
-                    >
-                        <span
+                    return (
+                        <Link
+                            key={item.href}
+                            href={item.href}
+                            aria-label={item.label}
                             className={cn(
-                                'flex items-center justify-center rounded-xl p-2.5',
+                                // Layout
+                                'flex flex-col items-center justify-center',
+                                'flex-1 h-full',
+                                // Smooth transition
                                 'transition-all duration-200 ease-in-out',
+                                // Colors
                                 isActive
-                                    ? 'bg-accent text-accent-foreground scale-110'
-                                    : 'text-muted-foreground scale-100',
+                                    ? 'text-primary'
+                                    : 'text-muted-foreground hover:text-primary/80',
                             )}
                         >
-                            <Icon
+                            <div
                                 className={cn(
-                                    'transition-all duration-200',
-                                    isActive ? 'w-[22px] h-[22px]' : 'w-5 h-5',
+                                    'flex flex-col items-center justify-center gap-1',
+                                    'transition-all duration-200 ease-in-out',
                                 )}
-                                strokeWidth={isActive ? 2.5 : 1.8}
-                            />
-                        </span>
-                    </Link>
-                );
-            })}
+                            >
+                                <Icon
+                                    className={cn(
+                                        'transition-all duration-200',
+                                        isActive ? 'w-5 h-5' : 'w-5 h-5',
+                                    )}
+                                    strokeWidth={isActive ? 2.5 : 1.8}
+                                />
+                                <span
+                                    className={cn(
+                                        'text-xs font-medium transition-all duration-200',
+                                        isActive ? 'text-primary' : 'text-muted-foreground',
+                                    )}
+                                >
+                                    {item.label}
+                                </span>
+                            </div>
+                        </Link>
+                    );
+                })}
+            </div>
         </nav>
     );
 }

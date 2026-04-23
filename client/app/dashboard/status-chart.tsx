@@ -21,10 +21,6 @@ const chartConfig = {
         label: 'Review',
         color: 'var(--chart-3)',
     },
-    rejected: {
-        label: 'Rejected',
-        color: 'var(--chart-4)',
-    },
 } satisfies ChartConfig;
 
 export function StatusChart({ data }: { data?: any[] }) {
@@ -35,7 +31,6 @@ export function StatusChart({ data }: { data?: any[] }) {
     const displayData = data && data.length > 0 ? data : [
         { status: 'passed', count: 0 },
         { status: 'review', count: 0 },
-        { status: 'rejected', count: 0 },
     ];
 
     const totalCandidates = React.useMemo(() => {

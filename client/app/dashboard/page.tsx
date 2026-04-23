@@ -186,8 +186,7 @@ export default function DashboardPage() {
                             className={cn(
                               "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors",
                               screening.status === 'passed' ? 'bg-green-500/10 text-green-500 border border-green-500/20' :
-                                screening.status === 'rejected' ? 'bg-red-500/10 text-red-500 border border-red-500/20' :
-                                  'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                                'bg-amber-500/10 text-amber-500 border border-amber-500/20'
                             )}
                           >
                             {screening.status}

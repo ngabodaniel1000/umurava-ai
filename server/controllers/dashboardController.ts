@@ -20,7 +20,7 @@ const getDashboardStats = async (req: AuthRequest, res: Response) => {
         let totalScore = 0;
         let countScored = 0;
 
-        const statusCounts = { passed: 0, rejected: 0, review: 0 };
+        const statusCounts = { passed: 0, review: 0 };
         const dailyActivity: { [key: string]: number } = {};
 
         // Initialize last 7 days for activity
@@ -41,7 +41,6 @@ const getDashboardStats = async (req: AuthRequest, res: Response) => {
             resItem.shortlist.forEach(c => {
                 // Shortlist statuses
                 if (c.status === 'passed') statusCounts.passed++;
-                else if (c.status === 'rejected') statusCounts.rejected++;
                 else statusCounts.review++;
 
                 totalScore += c.matchScore;
@@ -49,10 +48,7 @@ const getDashboardStats = async (req: AuthRequest, res: Response) => {
             });
         });
 
-        // Any candidate not explicitly passed or rejected is essentially in review/pending
-        // We adjust review count to be: Total Candidates - Passed - Rejected
-        // This makes the pie chart represent the ENTIRE candidate pool
-        statusCounts.review = Math.max(0, totalCandidates - statusCounts.passed - statusCounts.rejected);
+        statusCounts.review = Math.max(0, totalCandidates - statusCounts.passed);
         pendingScreenings = statusCounts.review;
 
         const averageScore = countScored > 0 ? (totalScore / countScored).toFixed(1) : 0;
@@ -67,7 +63,6 @@ const getDashboardStats = async (req: AuthRequest, res: Response) => {
         const statusDistribution = [
             { status: 'passed', count: statusCounts.passed, fill: 'var(--color-passed)' },
             { status: 'review', count: statusCounts.review, fill: 'var(--color-review)' },
-            { status: 'rejected', count: statusCounts.rejected, fill: 'var(--color-rejected)' },
         ];
 
         res.json({

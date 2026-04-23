@@ -9,7 +9,7 @@ const screenedCandidateSchema = new mongoose.Schema({
     strengths: { type: [String] },
     gaps: { type: [String] },
     reasoning: { type: String },
-    status: { type: String, enum: ['passed', 'rejected', 'review'], default: 'review' }
+    status: { type: String, enum: ['passed', 'review'], default: 'review' }
 });
 
 const screeningResultSchema = new mongoose.Schema(

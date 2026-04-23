@@ -136,7 +136,7 @@ export interface ScreeningResult {
   matchPercentage: number;
   matchedSkills: string[];
   feedback: string;
-  status: 'passed' | 'rejected' | 'review';
+  status: 'passed' | 'review';
   createdAt: Date;
 }
 
