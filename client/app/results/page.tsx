@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { Search, Filter, Download, CheckCircle, AlertCircle, XCircle, Loader2 } from 'lucide-react';
 import api from '@/lib/api-client';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function ResultsPage() {
   const [results, setResults] = useState<any[]>([]);
@@ -41,6 +42,29 @@ export default function ResultsPage() {
     fetchResults();
   }, []);
 
+  const handleExportAll = () => {
+    if (results.length === 0) return;
+
+    const headers = ['Job Title', 'Total Screened', 'Shortlisted', 'Date'];
+    const rows = results.map(r => [
+      `"${(r.jobTitle || r.job?.title || 'Unknown').replace(/"/g, '""')}"`,
+      r.totalCandidatesAnalyzed,
+      r.shortlistCount,
+      new Date(r.createdAt).toLocaleDateString()
+    ]);
+
+    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "all_screening_results.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('All results exported to CSV');
+  };
+
   const filteredResults = results.filter((result) => {
     const jobTitle = result.jobTitle || result.job?.title || '';
     const matchesSearch = jobTitle.toLowerCase().includes(searchQuery.toLowerCase());
@@ -62,9 +86,13 @@ export default function ResultsPage() {
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">Screening Results</h1>
             <p className="text-muted-foreground mt-1 text-sm md:text-base">View all AI screening results by job</p>
           </div>
-          <Button variant="outline" className="w-full sm:w-auto gap-2 border-border hover:bg-muted">
+          <Button
+            variant="outline"
+            className="w-full sm:w-auto gap-2 border-border hover:bg-accent hover:text-accent-foreground transition-all duration-300"
+            onClick={handleExportAll}
+          >
             <Download className="w-4 h-4" />
-            Export
+            Export All
           </Button>
         </div>
 
@@ -145,13 +173,13 @@ export default function ResultsPage() {
                         <td className="px-6 py-4 text-sm text-muted-foreground">
                           {new Date(result.createdAt).toLocaleDateString()}
                         </td>
-        
+
                         <td className="px-6 py-4 text-left">
                           <Link href={`/results/${result.job?._id || result.job}`}>
                             <Button
                               size="sm"
                               variant="outline"
-                              className="border-border hover:bg-muted text-xs font-bold gap-2"
+                              className="border-border hover:bg-accent hover:text-accent-foreground text-xs font-bold gap-2 transition-all"
                             >
                               View Results
                             </Button>

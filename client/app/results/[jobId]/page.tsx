@@ -18,10 +18,15 @@ import {
     Brain,
     Star,
     TrendingUp,
+    Download,
+    Share2,
+    MessageCircle,
+    Mail
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import api from '@/lib/api-client';
+import { toast } from 'sonner';
 
 interface ShortlistedCandidate {
     rank: number;
@@ -223,6 +228,68 @@ export default function JobSpecificResultsPage() {
         fetchJobResults();
     }, [jobId]);
 
+    const handleExportCSV = () => {
+        if (!data) return;
+
+        const headers = ['Rank', 'Candidate Name', 'Score', 'Recommendation', 'Reasoning'];
+        const rows = data.shortlist.map(c => [
+            c.rank,
+            c.candidateName,
+            c.matchScore,
+            c.recommendation,
+            `"${c.reasoning.replace(/"/g, '""')}"`
+        ]);
+
+        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `screening_results_${jobId}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success('Results exported to CSV');
+    };
+
+    const handleShare = () => {
+        if (navigator.share) {
+            navigator.share({
+                title: `Screening Results: ${data?.jobTitle}`,
+                url: window.location.href
+            }).catch(() => {
+                window.print();
+            });
+        } else {
+            window.print();
+        }
+    };
+
+    const getShareMessage = () => {
+        if (!data) return "";
+        let msg = `*Screening Results for ${data.jobTitle}*\n\n`;
+        msg += `Total Candidates: ${data.totalCandidatesAnalyzed}\n`;
+        msg += `Shortlisted: ${data.shortlistCount}\n\n`;
+        msg += `*Top Candidates:*\n`;
+        data.shortlist.slice(0, 5).forEach(c => {
+            msg += `- ${c.candidateName} (Score: ${c.matchScore}%)\n`;
+            msg += `  Recommendation: ${c.recommendation}\n`;
+        });
+        msg += `\nView full results here: ${window.location.href}`;
+        return msg;
+    };
+
+    const shareWhatsApp = () => {
+        const text = encodeURIComponent(getShareMessage());
+        window.open(`https://wa.me/?text=${text}`, '_blank');
+    };
+
+    const shareEmail = () => {
+        const subject = encodeURIComponent(`Screening Results: ${data?.jobTitle}`);
+        const body = encodeURIComponent(getShareMessage().replace(/\*/g, ''));
+        window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    };
+
     if (loading) {
         return (
             <AppLayout>
@@ -277,9 +344,36 @@ export default function JobSpecificResultsPage() {
                             Screening Date: {new Date(data.createdAt).toLocaleDateString()}
                         </p>
                     </div>
-                    <div className="flex gap-2">
-                        <Button variant="outline" className="gap-2 font-bold text-xs">
-                            Export PDF
+                    <div className="flex flex-wrap gap-2">
+                        <Button
+                            variant="outline"
+                            className="gap-2 font-bold text-xs hover:bg-accent hover:text-accent-foreground transition-colors h-10"
+                            onClick={handleExportCSV}
+                        >
+                            <Download className="w-3.5 h-3.5" />
+                            Export CSV
+                        </Button>
+                        <Button
+                            className="gap-2 font-bold text-xs bg-[#25D366] hover:bg-[#25D366]/90 text-white shadow-sm transition-all h-10"
+                            onClick={shareWhatsApp}
+                        >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            WhatsApp
+                        </Button>
+                        <Button
+                            className="gap-2 font-bold text-xs bg-accent hover:bg-accent/90 text-accent-foreground shadow-sm transition-all h-10"
+                            onClick={shareEmail}
+                        >
+                            <Mail className="w-3.5 h-3.5" />
+                            Email
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="gap-2 font-bold text-xs border-border hover:bg-accent hover:text-accent-foreground shadow-sm transition-all text-foreground h-10"
+                            onClick={handleShare}
+                        >
+                            <Share2 className="w-3.5 h-3.5" />
+                            Print / PDF
                         </Button>
                     </div>
                 </div>

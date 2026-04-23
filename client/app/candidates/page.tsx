@@ -14,11 +14,15 @@ import {
   Loader2,
   Upload,
   FileText,
-  ChevronDown
+  ChevronDown,
+  Edit,
+  Trash2,
+  MessageCircle
 } from 'lucide-react';
 import api from '@/lib/api-client';
 import { Candidate, Job } from '@/lib/types';
 import { FileUpload } from '@/components/screening/file-upload';
+import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Dialog,
@@ -44,6 +48,10 @@ export default function CandidatesPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [bulkUploadJobId, setBulkUploadJobId] = useState<string>('');
+
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingCandidate, setEditingCandidate] = useState<any>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const [candidateFilterJob, setCandidateFilterJob] = useState<string>('all');
   const [fromDate, setFromDate] = useState<string>('');
@@ -100,13 +108,48 @@ export default function CandidatesPage() {
     return matchesSearch && matchesJob && matchesDate;
   });
 
+  const handleUpdateCandidate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCandidate) return;
+
+    setIsUpdating(true);
+    try {
+      const cId = editingCandidate._id || editingCandidate.id;
+      const response = await api.put(`/candidates/${cId}`, editingCandidate);
+      setCandidates((prev) => prev.map((c) => (c._id || c.id) === cId ? response.data : c));
+      setIsEditOpen(false);
+      toast.success('Candidate updated successfully');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update candidate');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteCandidate = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this candidate?')) return;
+
+    try {
+      await api.delete(`/candidates/${id}`);
+      setCandidates((prev) => prev.filter((c) => (c._id || c.id) !== id));
+      toast.success('Candidate deleted successfully');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to delete candidate');
+    }
+  };
+
   return (
     <AppLayout>
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">Candidates</h1>
-            <p className="text-muted-foreground mt-1 text-sm md:text-base">View and manage all candidates in your pipeline</p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-muted-foreground text-sm md:text-base">View and manage all candidates in your pipeline</p>
+              <span className="px-2 py-0.5 rounded-full bg-accent/10 text-accent text-xs font-bold border border-accent/20">
+                {filteredCandidates.length} Total
+              </span>
+            </div>
           </div>
 
           <div className="flex gap-2">
@@ -160,7 +203,7 @@ export default function CandidatesPage() {
                       isLoading={isUploading}
                       onUpload={async (files) => {
                         if (!bulkUploadJobId) {
-                          alert('Please select a target job profile first');
+                          toast.error('Please select a target job profile first');
                           return;
                         }
 
@@ -175,7 +218,7 @@ export default function CandidatesPage() {
                             },
                           });
 
-                          alert(`Successfully processed and added ${response.data.addedCandidatesCount} candidates to the pipeline.`);
+                          toast.success(`Successfully added ${response.data.addedCandidatesCount} candidates.`);
                           setIsBulkUploadOpen(false);
 
                           // Refresh candidates loop
@@ -183,7 +226,7 @@ export default function CandidatesPage() {
                           setCandidates(candidatesRes.data);
                         } catch (error: any) {
                           console.error('File upload error:', error);
-                          alert(error.response?.data?.message || 'Failed to upload and parse files');
+                          toast.error(error.response?.data?.message || 'Failed to upload and parse files');
                         } finally {
                           setIsUploading(false);
                         }
@@ -294,11 +337,29 @@ export default function CandidatesPage() {
                             {new Date(candidate.appliedDate).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4">
-                            <Link href={`/candidates/${cId}`}>
-                              <Button variant="outline" size="sm" className="border-border hover:bg-muted">
-                                View
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 w-8 p-0 border-border hover:bg-accent hover:text-accent-foreground"
+                                onClick={() => {
+                                  setEditingCandidate(candidate);
+                                  setIsEditOpen(true);
+                                }}
+                                title="Edit Candidate"
+                              >
+                                <Edit className="w-4 h-4" />
                               </Button>
-                            </Link>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 w-8 p-0 border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20"
+                                onClick={() => handleDeleteCandidate(cId)}
+                                title="Delete Candidate"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -308,11 +369,73 @@ export default function CandidatesPage() {
               </div>
             </Card>
 
-            {filteredCandidates.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">No candidates found</p>
-              </div>
-            )}
+            {/* Edit Candidate Dialog */}
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+              <DialogContent className="sm:max-w-[500px] bg-card border-border">
+                <DialogHeader>
+                  <DialogTitle className="text-foreground text-xl">Edit Candidate</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleUpdateCandidate} className="space-y-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">First Name</label>
+                      <Input
+                        value={editingCandidate?.firstName || ''}
+                        onChange={(e) => setEditingCandidate({ ...editingCandidate, firstName: e.target.value })}
+                        className="h-11 bg-input border-border"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Last Name</label>
+                      <Input
+                        value={editingCandidate?.lastName || ''}
+                        onChange={(e) => setEditingCandidate({ ...editingCandidate, lastName: e.target.value })}
+                        className="h-11 bg-input border-border"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Email</label>
+                    <Input
+                      type="email"
+                      value={editingCandidate?.email || ''}
+                      onChange={(e) => setEditingCandidate({ ...editingCandidate, email: e.target.value })}
+                      className="h-11 bg-input border-border"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Headline</label>
+                    <Input
+                      value={editingCandidate?.headline || ''}
+                      onChange={(e) => setEditingCandidate({ ...editingCandidate, headline: e.target.value })}
+                      className="h-11 bg-input border-border"
+                      placeholder="e.g. Software Engineer"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Location</label>
+                    <Input
+                      value={editingCandidate?.location || ''}
+                      onChange={(e) => setEditingCandidate({ ...editingCandidate, location: e.target.value })}
+                      className="h-11 bg-input border-border"
+                      placeholder="e.g. Kigali, Rwanda"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-3 pt-6">
+                    <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)} className="h-11 px-6">
+                      Cancel
+                    </Button>
+                    <Button type="submit" className="h-11 px-6 bg-accent text-accent-foreground hover:bg-accent/90" disabled={isUpdating}>
+                      {isUpdating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                      Save Changes
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
           </>
         )}
       </div>

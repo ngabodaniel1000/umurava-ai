@@ -113,9 +113,50 @@ const deleteCandidate = async (req: AuthRequest, res: Response) => {
     }
 };
 
+// @desc    Update a candidate
+// @route   PUT /api/candidates/:id
+// @access  Private
+const updateCandidate = async (req: AuthRequest, res: Response) => {
+    const candidate: any = await Candidate.findById(req.params.id).populate('job');
+
+    if (candidate) {
+        if (candidate.job.recruiter.toString() !== req.user?._id.toString() && req.user?.role !== 'admin') {
+            res.status(401).json({ message: 'Not authorized to update this candidate' });
+            return;
+        }
+
+        const {
+            firstName, lastName, email, headline, bio, location,
+            skills, languages, experience, education, certifications,
+            projects, availability, socialLinks
+        } = req.body;
+
+        candidate.firstName = firstName || candidate.firstName;
+        candidate.lastName = lastName || candidate.lastName;
+        candidate.email = email || candidate.email;
+        candidate.headline = headline || candidate.headline;
+        candidate.bio = bio || candidate.bio;
+        candidate.location = location || candidate.location;
+        candidate.skills = skills || candidate.skills;
+        candidate.languages = languages || candidate.languages;
+        candidate.experience = experience || candidate.experience;
+        candidate.education = education || candidate.education;
+        candidate.certifications = certifications || candidate.certifications;
+        candidate.projects = projects || candidate.projects;
+        candidate.availability = availability || candidate.availability;
+        candidate.socialLinks = socialLinks || candidate.socialLinks;
+
+        const updatedCandidate = await candidate.save();
+        res.json(updatedCandidate);
+    } else {
+        res.status(404).json({ message: 'Candidate not found' });
+    }
+};
+
 export {
     addCandidate,
     getCandidates,
     getCandidateById,
     deleteCandidate,
+    updateCandidate,
 };

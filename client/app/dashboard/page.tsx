@@ -13,6 +13,7 @@ import { ScoreChart } from './score-chart';
 import api from '@/lib/api-client';
 
 export default function DashboardPage() {
+  const [user, setUser] = useState<any>(null);
   const [stats, setStats] = useState<any[]>([]);
   const [recentScreenings, setRecentScreenings] = useState<any[]>([]);
   const [activityData, setActivityData] = useState<any[]>([]);
@@ -23,10 +24,13 @@ export default function DashboardPage() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [statsRes, recentRes] = await Promise.all([
+        const [statsRes, recentRes, userRes] = await Promise.all([
           api.get('/dashboard/stats'),
-          api.get('/dashboard/recent')
+          api.get('/dashboard/recent'),
+          api.get('/users/profile')
         ]);
+
+        setUser(userRes.data);
 
         const statsData = [
           {
@@ -48,8 +52,8 @@ export default function DashboardPage() {
             color: 'bg-amber-500/10 text-amber-400',
           },
           {
-            label: 'Avg Score',
-            value: `${statsRes.data.averageScore}/10`,
+            label: 'Avg Score (%)',
+            value: `${statsRes.data.averageScore}%`,
             icon: TrendingUp,
             color: 'bg-green-500/10 text-green-400',
           },
@@ -75,7 +79,7 @@ export default function DashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground mt-1 text-sm md:text-base">Welcome back! Here&apos;s your screening overview.</p>
+            <p className="text-muted-foreground mt-1 text-sm md:text-base font-medium">Welcome {user?.name || 'User'}</p>
           </div>
           <Link href="/jobs" className="w-full sm:w-auto">
             <Button className="w-full sm:w-auto gap-2 bg-accent hover:bg-accent/90 text-accent-foreground shadow-lg shadow-accent/20">
@@ -164,8 +168,8 @@ export default function DashboardPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {recentScreenings.map((screening) => (
-                      <tr key={screening._id} className="hover:bg-muted/50 transition-colors">
+                    {recentScreenings.map((screening, index) => (
+                      <tr key={`${screening._id}-${index}`} className="hover:bg-muted/50 transition-colors">
                         <td className="px-6 py-4 text-sm text-foreground font-medium">{screening.job?.title || 'N/A'}</td>
                         <td className="px-6 py-4 text-sm text-foreground">{screening.candidate ? `${screening.candidate.firstName} ${screening.candidate.lastName}` : 'N/A'}</td>
                         <td className="px-6 py-4">

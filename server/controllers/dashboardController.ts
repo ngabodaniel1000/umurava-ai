@@ -96,7 +96,7 @@ const getRecentScreenings = async (req: AuthRequest, res: Response) => {
         for (const jobResult of recentJobs) {
             for (const item of jobResult.shortlist) {
                 recentScreenings.push({
-                    _id: jobResult._id,
+                    _id: `${jobResult._id}_${item.candidate?._id || Math.random()}`,
                     candidateId: item.candidate?._id,
                     job: jobResult.job,
                     candidate: item.candidate,

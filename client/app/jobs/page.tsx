@@ -17,6 +17,8 @@ export default function JobsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [fromDate, setFromDate] = useState<string>('');
+  const [toDate, setToDate] = useState<string>('');
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -33,10 +35,25 @@ export default function JobsPage() {
     fetchJobs();
   }, []);
 
-  const filteredJobs = jobs.filter((job) =>
-    job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    job.department.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredJobs = jobs.filter((job) => {
+    const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.department.toLowerCase().includes(searchQuery.toLowerCase());
+
+    let matchesDate = true;
+    if (fromDate || toDate) {
+      const createdDate = new Date(job.createdAt);
+      if (fromDate) {
+        matchesDate = matchesDate && createdDate >= new Date(fromDate);
+      }
+      if (toDate) {
+        const end = new Date(toDate);
+        end.setHours(23, 59, 59, 999);
+        matchesDate = matchesDate && createdDate <= end;
+      }
+    }
+
+    return matchesSearch && matchesDate;
+  });
 
   const handleSelectJob = (job: Job) => {
     setActiveJob(job);
@@ -58,15 +75,32 @@ export default function JobsPage() {
           </Link>
         </div>
 
-        {/* Search */}
-        <div className="mb-6 relative">
-          <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-          <Input
-            placeholder="Search jobs..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-input border-border text-foreground placeholder:text-muted-foreground"
-          />
+        {/* Search and Filters */}
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
+            <Input
+              placeholder="Search jobs..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 bg-input border-border text-foreground placeholder:text-muted-foreground"
+            />
+          </div>
+          <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+            <Input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="bg-input border-border text-foreground w-full md:w-auto cursor-pointer"
+            />
+            <span className="text-muted-foreground text-sm font-medium">to</span>
+            <Input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="bg-input border-border text-foreground w-full md:w-auto cursor-pointer"
+            />
+          </div>
         </div>
 
         {error && (
@@ -111,7 +145,7 @@ export default function JobsPage() {
 
                   <div className="flex gap-2 pt-4 border-t border-border">
                     <Link href={`/jobs/${job.id}`} className="flex-1">
-                      <Button variant="outline" className="w-full border-border hover:bg-muted">
+                      <Button variant="outline" className="w-full border-border hover:bg-muted hover:border-accent transition-colors">
                         View
                       </Button>
                     </Link>

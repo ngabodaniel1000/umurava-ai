@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ScreeningProvider } from '@/lib/screening-context'
 import { ThemeProvider } from '@/lib/theme-provider'
+import { Toaster } from 'sonner'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -20,10 +21,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="font-sans antialiased bg-background text-foreground">
+      <body className="font-sans antialiased bg-background text-foreground" suppressHydrationWarning>
         <ThemeProvider>
           <ScreeningProvider>
             {children}
+            <Toaster position="bottom-right" richColors />
           </ScreeningProvider>
         </ThemeProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
