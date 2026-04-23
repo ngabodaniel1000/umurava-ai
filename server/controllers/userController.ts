@@ -613,9 +613,40 @@ const getUserProfile = async (req: AuthRequest, res: Response) => {
     }
 };
 
+// @desc    Delete user account + all jobs & candidates
+// @route   DELETE /api/users/account
+// @access  Private
+const deleteAccount = async (req: AuthRequest, res: Response) => {
+    const userId = req.user._id;
+
+    // 1. Find all jobs owned by the user
+    const jobs = await Job.find({ recruiter: userId });
+    const jobIds = jobs.map((j) => j._id);
+
+    // 2. Delete all candidates linked to those jobs
+    if (jobIds.length > 0) {
+        await Candidate.deleteMany({ job: { $in: jobIds } });
+    }
+
+    // 3. Delete all the user's jobs
+    await Job.deleteMany({ recruiter: userId });
+
+    // 4. Delete the user
+    await User.findByIdAndDelete(userId);
+
+    // 5. Clear the auth cookie
+    res.cookie('token', '', {
+        httpOnly: true,
+        expires: new Date(0),
+    });
+
+    res.status(200).json({ message: 'Account and all associated data deleted successfully' });
+};
+
 export {
     authUser,
     registerUser,
     getUserProfile,
     logoutUser,
+    deleteAccount,
 };

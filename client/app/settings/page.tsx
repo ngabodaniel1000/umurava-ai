@@ -5,21 +5,30 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useState, useEffect } from 'react';
-import { Save, Bell, Shield, Palette, LogOut, Loader2 } from 'lucide-react';
+import { Save, Shield, LogOut, Loader2, Trash2, AlertTriangle, X } from 'lucide-react';
 import api from '@/lib/api-client';
+import { useRouter } from 'next/navigation';
 
 export default function SettingsPage() {
+  const router = useRouter();
+
   const [formData, setFormData] = useState({
     companyName: '',
     email: '',
     fullName: '',
-    notifications: true,
-    theme: 'dark',
   });
 
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+
+  // Delete modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
+  const CONFIRM_PHRASE = 'delete my account';
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -29,8 +38,6 @@ export default function SettingsPage() {
           fullName: data.name,
           email: data.email,
           companyName: data.company,
-          notifications: true,
-          theme: 'dark',
         });
       } catch (err: any) {
         console.error('Failed to fetch profile', err);
@@ -38,21 +45,31 @@ export default function SettingsPage() {
         setLoading(false);
       }
     };
-
     fetchProfile();
   }, []);
 
   const handleSave = async () => {
     setSaved(false);
     setError('');
-
     try {
-      // Note: Backend doesn't have an update endpoint yet, but this is the structure
-      // await api.put('/users/profile', { name: formData.fullName, company: formData.companyName });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err: any) {
       setError('Failed to update settings');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText.toLowerCase() !== CONFIRM_PHRASE) return;
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await api.delete('/users/account');
+      // Redirect to login after successful deletion
+      router.push('/login');
+    } catch (err: any) {
+      setDeleteError(err?.response?.data?.message || 'Failed to delete account. Please try again.');
+      setDeleting(false);
     }
   };
 
@@ -108,7 +125,6 @@ export default function SettingsPage() {
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   disabled
                   className="bg-input border-border text-foreground opacity-60"
                 />
@@ -137,7 +153,6 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        
         {/* Danger Zone */}
         <Card className="p-8 bg-red-500/5 border-red-500/20">
           <h2 className="text-2xl font-bold text-red-400 mb-4 flex items-center gap-2">
@@ -147,14 +162,101 @@ export default function SettingsPage() {
 
           <div className="space-y-4">
             <div>
-              <p className="text-foreground mb-4">Once you delete your account, there is no going back. Be certain.</p>
-              <Button variant="outline" className="border-red-500/50 text-red-400 hover:bg-red-500/10">
+              <p className="text-foreground mb-1">Once you delete your account, there is no going back. Be certain.</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                This will permanently delete your account, <strong className="text-red-400">all your job postings</strong>, and <strong className="text-red-400">all associated candidates</strong>.
+              </p>
+              <Button
+                variant="outline"
+                className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                onClick={() => { setShowDeleteModal(true); setDeleteConfirmText(''); setDeleteError(''); }}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
                 Delete Account
               </Button>
             </div>
           </div>
         </Card>
       </div>
+
+      {/* Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-card border border-red-500/30 rounded-2xl p-8 max-w-md w-full shadow-2xl animate-in fade-in zoom-in-95">
+            {/* Header */}
+            <div className="flex items-start justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-red-500/15 flex items-center justify-center">
+                  <AlertTriangle className="w-5 h-5 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-foreground">Delete Account</h3>
+                  <p className="text-sm text-muted-foreground">This action cannot be undone</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="text-muted-foreground hover:text-foreground transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Warning list */}
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6 space-y-2">
+              <p className="text-sm font-semibold text-red-400">The following will be permanently deleted:</p>
+              <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                <li>Your user account and profile</li>
+                <li>All job postings you created</li>
+                <li>All candidates linked to those jobs</li>
+              </ul>
+            </div>
+
+            {/* Confirm input */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-foreground mb-2">
+                Type <span className="font-mono text-red-400">"{CONFIRM_PHRASE}"</span> to confirm
+              </label>
+              <Input
+                id="delete-confirm-input"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder={CONFIRM_PHRASE}
+                className="bg-input border-border text-foreground"
+                onKeyDown={(e) => { if (e.key === 'Enter' && deleteConfirmText.toLowerCase() === CONFIRM_PHRASE) handleDeleteAccount(); }}
+              />
+            </div>
+
+            {deleteError && (
+              <div className="mb-4 p-3 rounded bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                {deleteError}
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+                className="flex-1 px-4 py-2 rounded-lg border border-border text-foreground hover:bg-accent/10 transition font-medium disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText.toLowerCase() !== CONFIRM_PHRASE || deleting}
+                className="flex-1 px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {deleting ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Deleting...</>
+                ) : (
+                  <><Trash2 className="w-4 h-4" /> Delete Forever</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }

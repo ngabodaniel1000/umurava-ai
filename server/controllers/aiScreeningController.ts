@@ -389,13 +389,6 @@ Do NOT include any text before or after the JSON. The response must be parseable
 
         // Optionally persist results to DB
         if (saveResults && screeningData.shortlist) {
-            const statusMap: Record<string, string> = {
-                'Highly Recommended': 'passed',
-                'Recommended': 'passed',
-                'Consider': 'review',
-                'Borderline': 'review',
-            };
-
             const shortListItems = screeningData.shortlist.map(item => ({
                 rank: item.rank,
                 candidate: item.candidateId,
@@ -405,7 +398,7 @@ Do NOT include any text before or after the JSON. The response must be parseable
                 strengths: item.strengths || [],
                 gaps: item.gaps || [],
                 reasoning: item.reasoning,
-                status: statusMap[item.recommendation] || 'review'
+                status: 'passed'
             }));
 
             const existingResult = await ScreeningResult.findOne({ job: jobId }) as ScreeningResultDocument | null;
