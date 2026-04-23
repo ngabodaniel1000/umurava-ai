@@ -15,11 +15,11 @@ const chartConfig = {
     },
     passed: {
         label: 'Passed',
-        color: 'var(--chart-2)',
+        color: '#22c55e',
     },
     review: {
         label: 'Review',
-        color: 'var(--chart-3)',
+        color: '#3b82f6',
     },
 } satisfies ChartConfig;
 

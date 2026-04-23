@@ -42,49 +42,49 @@ interface ScreeningData {
     shortlist: ShortlistedCandidate[];
 }
 
+// Color config with green for positive indicators
 const recommendationConfig = {
     'Highly Recommended': {
         icon: Trophy,
-        color: 'text-yellow-400',
-        bg: 'bg-yellow-400/10 border-yellow-400/30',
-        badge: 'bg-yellow-400/20 text-yellow-300',
+        color: 'text-green-500',
+        bg: 'bg-card border-border',
+        badge: 'bg-green-500/10 text-green-500',
     },
     Recommended: {
         icon: CheckCircle,
-        color: 'text-green-400',
-        bg: 'bg-green-500/10 border-green-500/30',
-        badge: 'bg-green-500/20 text-green-300',
+        color: 'text-green-500',
+        bg: 'bg-card border-border',
+        badge: 'bg-green-500/10 text-green-500',
     },
     Consider: {
         icon: AlertCircle,
-        color: 'text-blue-400',
-        bg: 'bg-blue-500/10 border-blue-500/30',
-        badge: 'bg-blue-500/20 text-blue-300',
+        color: 'text-blue-500',
+        bg: 'bg-card border-border',
+        badge: 'bg-blue-500/10 text-blue-500',
     },
     Borderline: {
         icon: XCircle,
-        color: 'text-amber-400',
-        bg: 'bg-amber-500/10 border-amber-500/30',
-        badge: 'bg-amber-500/20 text-amber-300',
+        color: 'text-muted-foreground',
+        bg: 'bg-card border-border',
+        badge: 'bg-muted text-muted-foreground',
     },
 };
 
 function ScoreRing({ score }: { score: number }) {
     const circumference = 2 * Math.PI * 36;
     const offset = circumference - (score / 100) * circumference;
+    // Use green for high scores, blue for medium, muted for low
     const color =
         score >= 80
-            ? '#facc15'
+            ? '#22c55e' // Green for excellent
             : score >= 65
-                ? '#4ade80'
-                : score >= 50
-                    ? '#60a5fa'
-                    : '#fb923c';
+                ? '#3b82f6' // Blue for good
+                : '#64748b'; // Muted for needs improvement
 
     return (
         <div className="relative w-20 h-20 flex-shrink-0">
             <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
-                <circle cx="40" cy="40" r="36" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="7" />
+                <circle cx="40" cy="40" r="36" fill="none" className="stroke-muted" strokeWidth="7" />
                 <circle
                     cx="40"
                     cy="40"
@@ -99,7 +99,7 @@ function ScoreRing({ score }: { score: number }) {
                 />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-lg font-bold text-white leading-none">{score}</span>
+                <span className="text-lg font-bold text-foreground leading-none">{score}</span>
                 <span className="text-[9px] text-muted-foreground leading-none mt-0.5">/ 100</span>
             </div>
         </div>
@@ -119,15 +119,13 @@ function CandidateCard({
     const Icon = cfg.icon;
 
     return (
-        <Card
-            className={`border transition-all duration-300 ${cfg.bg} ${isExpanded ? 'shadow-lg' : 'hover:shadow-md'}`}
-        >
+        <Card className="bg-card border-border transition-all duration-300 hover:shadow-md">
             <button
                 onClick={onToggle}
                 className="w-full p-5 flex items-center gap-4 text-left"
                 aria-expanded={isExpanded}
             >
-                <div className="flex-shrink-0 w-9 h-9 rounded-full bg-background/40 border border-border flex items-center justify-center">
+                <div className="flex-shrink-0 w-9 h-9 rounded-full bg-muted border-border flex items-center justify-center">
                     <span className="text-sm font-bold text-foreground">#{candidate.rank}</span>
                 </div>
 
@@ -149,23 +147,23 @@ function CandidateCard({
             </button>
 
             {isExpanded && (
-                <div className="px-5 pb-5 space-y-4 border-t border-border/40 pt-4">
+                <div className="px-5 pb-5 space-y-4 pt-4 border-t border-border">
                     <div>
                         <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1.5 font-bold">
                             AI Reasoning
                         </p>
-                        <p className="text-sm text-foreground leading-relaxed">{candidate.reasoning}</p>
+                        <p className="text-sm text-foreground/80 leading-relaxed">{candidate.reasoning}</p>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <p className="text-xs uppercase tracking-widest text-green-400 mb-2 font-bold flex items-center gap-1">
+                            <p className="text-xs uppercase tracking-widest text-green-500 mb-2 font-bold flex items-center gap-1">
                                 <CheckCircle className="w-3 h-3" /> Strengths
                             </p>
                             <ul className="space-y-1.5">
                                 {candidate.strengths?.map((s, i) => (
-                                    <li key={i} className="flex items-start gap-2 text-sm text-foreground">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 mt-1.5 flex-shrink-0" />
+                                    <li key={i} className="flex items-start gap-2 text-sm text-foreground/80">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
                                         {s}
                                     </li>
                                 ))}
@@ -173,14 +171,14 @@ function CandidateCard({
                         </div>
 
                         <div>
-                            <p className="text-xs uppercase tracking-widest text-amber-400 mb-2 font-bold flex items-center gap-1">
+                            <p className="text-xs uppercase tracking-widest text-blue-500 mb-2 font-bold flex items-center gap-1">
                                 <AlertCircle className="w-3 h-3" /> Gaps / Risks
                             </p>
                             {candidate.gaps?.length > 0 ? (
                                 <ul className="space-y-1.5">
                                     {candidate.gaps.map((g, i) => (
-                                        <li key={i} className="flex items-start gap-2 text-sm text-foreground">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 flex-shrink-0" />
+                                        <li key={i} className="flex items-start gap-2 text-sm text-foreground/80">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
                                             {g}
                                         </li>
                                     ))}
@@ -229,7 +227,7 @@ export default function JobSpecificResultsPage() {
         return (
             <AppLayout>
                 <div className="flex flex-col items-center justify-center py-32 gap-4">
-                    <Loader2 className="w-10 h-10 text-accent animate-spin" />
+                    <Loader2 className="w-10 h-10 text-primary animate-spin" />
                     <p className="text-muted-foreground">Loading screening data...</p>
                 </div>
             </AppLayout>
@@ -240,8 +238,8 @@ export default function JobSpecificResultsPage() {
         return (
             <AppLayout>
                 <div className="max-w-md mx-auto text-center py-32 space-y-4">
-                    <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto text-destructive">
-                        <XCircle className="w-8 h-8" />
+                    <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto">
+                        <XCircle className="w-8 h-8 text-destructive" />
                     </div>
                     <h2 className="text-xl font-bold text-foreground">Error Loading Results</h2>
                     <p className="text-muted-foreground">{error || 'Something went wrong.'}</p>
@@ -273,52 +271,52 @@ export default function JobSpecificResultsPage() {
                             <ArrowLeft className="w-4 h-4" /> Back to Results
                         </Button>
                         <h1 className="text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
-                            <Brain className="w-7 h-7 text-accent" /> {data.jobTitle}
+                            <Brain className="w-7 h-7 text-green-500" /> {data.jobTitle}
                         </h1>
                         <p className="text-muted-foreground mt-1 text-sm">
                             Screening Date: {new Date(data.createdAt).toLocaleDateString()}
                         </p>
                     </div>
                     <div className="flex gap-2">
-                        <Button variant="outline" className="gap-2 border-border hover:bg-muted font-bold text-xs">
+                        <Button variant="outline" className="gap-2 font-bold text-xs">
                             Export PDF
                         </Button>
                     </div>
                 </div>
 
-                {/* Summary stats */}
+                {/* Summary stats - using green for positive metrics */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
                         {
                             icon: Users,
                             label: 'Candidates Analyzed',
                             value: data.totalCandidatesAnalyzed,
-                            color: 'text-blue-400',
-                            bg: 'bg-blue-400/10',
+                            color: 'text-blue-500',
+                            bg: 'bg-blue-500/10',
                         },
                         {
                             icon: Trophy,
                             label: 'Shortlisted',
                             value: data.shortlistCount,
-                            color: 'text-yellow-400',
-                            bg: 'bg-yellow-400/10',
+                            color: 'text-green-500',
+                            bg: 'bg-green-500/10',
                         },
                         {
                             icon: Star,
                             label: 'Top Score',
                             value: `${topCandidate?.matchScore ?? 0}`,
-                            color: 'text-green-400',
-                            bg: 'bg-green-400/10',
+                            color: 'text-green-500',
+                            bg: 'bg-green-500/10',
                         },
                         {
                             icon: TrendingUp,
                             label: 'Avg Score',
                             value: `${avgScore}`,
-                            color: 'text-accent',
-                            bg: 'bg-accent/10',
+                            color: 'text-blue-500',
+                            bg: 'bg-blue-500/10',
                         },
                     ].map((stat) => (
-                        <Card key={stat.label} className={`p-5 border-border ${stat.bg} border rounded-xl`}>
+                        <Card key={stat.label} className="p-5 border-border bg-card rounded-xl">
                             <div className={`w-9 h-9 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
                                 <stat.icon className={`w-5 h-5 ${stat.color}`} />
                             </div>
@@ -328,9 +326,9 @@ export default function JobSpecificResultsPage() {
                     ))}
                 </div>
 
-                {/* Disclaimer */}
-                <div className="flex items-start gap-4 p-5 rounded-2xl bg-accent/5 border border-accent/10">
-                    <Sparkles className="w-6 h-6 text-accent mt-0.5 flex-shrink-0" />
+                {/* Disclaimer - using green accent */}
+                <div className="flex items-start gap-4 p-5 rounded-2xl bg-green-500/5 border border-green-500/20">
+                    <Sparkles className="w-6 h-6 text-green-500 mt-0.5 flex-shrink-0" />
                     <div className="space-y-1">
                         <p className="text-sm font-bold text-foreground">AI-Powered Shortlist</p>
                         <p className="text-xs text-muted-foreground leading-relaxed">
@@ -343,7 +341,7 @@ export default function JobSpecificResultsPage() {
                 {/* Shortlist */}
                 <div className="space-y-4">
                     <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
-                        <Target className="w-5 h-5 text-accent" /> Ranked Shortlist
+                        <Target className="w-5 h-5 text-green-500" /> Ranked Shortlist
                     </h2>
                     <div className="space-y-4">
                         {data.shortlist.map((candidate) => (
