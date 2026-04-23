@@ -24,9 +24,12 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
+// setting proxy
+app.set('trust proxy', 1);
+
 // Enable CORS
 app.use(cors({
-    origin: true,
+    origin: process.env.FRONTEND_URL,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Cookie']
