@@ -30,7 +30,7 @@ graph TD
 - **Frontend**: Next.js 14+ (App Router), Tailwind CSS, Lucide React, Recharts
 - **Backend**: Node.js, Express.js (TypeScript)
 - **Database**: MongoDB (Mongoose)
-- **Authentication**: JWT with HTTP-only Cookies
+- **Authentication**: JWT with Bear token authentication
 - **AI**: Google Generative AI (Gemini API)
 
 ## 🚀 Setup Instructions
@@ -84,12 +84,30 @@ The platform uses a sophisticated AI screening engine to evaluate candidates:
 
 1.  **Data Consolidation**: Fetches the complete job description and all candidate talent profiles associated with the job.
 2.  **Context Construction**: Orchestrates a rich, structured prompt that instructs the AI on specific evaluation criteria (Skills 25%, Experience 30%, Education 20%, Projects 15%, Availability 10%).
-3.  **Resilient Execution**: Uses a **Model Fallback Logic** to ensure high availability:
-    *   Attempts `gemini-2.5-flash` for high-speed analysis.
-    *   Falls back to `gemini-2.0-flash-exp` if prioritized models are unavailable.
-    *   Continues through `gemini-1.5-flash`, `1.5-pro`, and `1.0-pro` until success.
-4.  **Structured Analysis**: The AI generates a ranked JSON output containing match scores, strengths, gaps, and natural language reasoning for every shortlisted candidate.
+3.  **Resilient Execution**: Uses a **Model Fallback Logic** to ensure high availability. The engine is configured with a prioritized list of models and automatically retries with the next model if one fails or encounters rate limits:
+    ```typescript
+    const AVAILABLE_MODELS = [
+        'gemini-3.1-flash-lite-preview',
+        'gemini-3-flash-preview',
+        'gemini-2.5-flash',
+        'gemini-2.5-flash-lite',
+        'gemini-robotics-er-1.6-preview'
+    ] as const;
+    ```
+4.  **Structured Analysis**: The AI generates a ranked JSON output containing match scores, strengths, gaps, and natural language reasoning for every candidate evaluated.
 5.  **Persistence**: Results are saved to the database at the job level for instant retrieval and historical tracking.
+
+## 📁 Candidate Profile Generation & Bulk Parsing
+
+The platform enables seamless candidate ingestion through intelligent document parsing:
+
+1.  **Multi-Format Ingestion**: Supports uploading resumes in **PDF**, **Word (.docx)**, and specialized bulk data in **Excel (.xlsx)**.
+2.  **AI-Driven Extraction**: Instead of simple keyword matching, the system uses Gemini to "read" the document and extract structured data:
+    *   **Talent Profile Mapping**: Automatically populates 8 core sections including Skills, Experience, Projects, Education, and Certifications.
+    *   **Contextual Understanding**: Correctly identifies roles, dates, and technology stacks even in varied resume layouts.
+3.  **Batch Processing**: Recruiter can upload dozens of files simultaneously. The system iterates through the files, generates candidate profiles in parallel, and links them to the active job posting.
+4.  **Multimodal Support**: Leverages Gemini's ability to process both text-heavy documents and image-based PDF resumes directly.
+
 
 ## 📝 Assumptions and Limitations
 
@@ -99,6 +117,6 @@ The platform uses a sophisticated AI screening engine to evaluate candidates:
 - **Recruiter Ownership**: The system assumes a 1-to-N relationship where a recruiter owns specific jobs and can only see results for those jobs.
 
 ### Limitations
-- **Token Limits**: Processing more than 50-100 candidates in a single AI call may exceed context window limits of some smaller models (mitigated by fallback logic).
+- **Token Limits**: Processing more than 100-300 candidates in a single AI call may exceed context window limits of some smaller models (mitigated by fallback logic).
 - **Processing Time**: AI analysis can take 10-60 seconds depending on the number of candidates and the active model.
 - **Data Privacy**: Personal identifying information is sent to the Gemini API for analysis; users should ensure compliance with their local data protection regulations.
