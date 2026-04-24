@@ -506,13 +506,6 @@ const authUser = async (req: AuthRequest, res: Response) => {
     if (user && (await user.matchPassword(password))) {
         const token = generateToken(user._id);
 
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'development' ? "lax" : "none",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
-
         res.json({
             _id: user._id,
             name: user.name,
@@ -520,6 +513,7 @@ const authUser = async (req: AuthRequest, res: Response) => {
             role: user.role,
             company: user.company,
             avatar: user.avatar,
+            token,
         });
     } else {
         res.status(401).json({ message: 'Invalid email or password' });
@@ -563,19 +557,13 @@ const registerUser = async (req: AuthRequest, res: Response) => {
 
         const token = generateToken(user._id);
 
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: process.env.NODE_ENV === 'development' ? "lax" : "none",
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        });
-
         res.status(201).json({
             _id: user._id,
             name: user.name,
             email: user.email,
             role: user.role,
             company: user.company,
+            token,
         });
     } else {
         res.status(400).json({ message: 'Invalid user data' });
@@ -586,12 +574,6 @@ const registerUser = async (req: AuthRequest, res: Response) => {
 // @route   POST /api/users/logout
 // @access  Public
 const logoutUser = async (req: AuthRequest, res: Response) => {
-    res.cookie('token', '', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'development' ? "lax" : "none",
-        expires: new Date(0),
-    });
     res.status(200).json({ message: 'Logged out successfully' });
 };
 
@@ -635,12 +617,6 @@ const deleteAccount = async (req: AuthRequest, res: Response) => {
 
     // 4. Delete the user
     await User.findByIdAndDelete(userId);
-
-    // 5. Clear the auth cookie
-    res.cookie('token', '', {
-        httpOnly: true,
-        expires: new Date(0),
-    });
 
     res.status(200).json({ message: 'Account and all associated data deleted successfully' });
 };

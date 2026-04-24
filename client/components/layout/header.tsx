@@ -34,9 +34,11 @@ export function Header() {
 
   const handleLogout = async () => {
     try {
-      await api.post('/users/logout')
-      router.push('/login');
+      await api.post('/users/logout');
     } catch (err) {
+      console.error('Logout failed');
+    } finally {
+      localStorage.removeItem('user');
       router.push('/login');
     }
   };

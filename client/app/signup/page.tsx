@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sparkles } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import api from '@/lib/api-client';
@@ -21,6 +21,13 @@ export default function SignupPage() {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        const user = localStorage.getItem('user');
+        if (user) {
+            router.push('/dashboard');
+        }
+    }, [router]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({
@@ -47,7 +54,8 @@ export default function SignupPage() {
         }
 
         try {
-            await api.post('/users', formData);
+            const { data } = await api.post('/users', formData);
+            localStorage.setItem('user', JSON.stringify(data));
             router.push('/dashboard');
         } catch (err: any) {
             setError(err.response?.data?.message || 'Signup failed. Please try again.');

@@ -66,6 +66,7 @@ export default function SettingsPage() {
     try {
       await api.delete('/users/account');
       // Redirect to login after successful deletion
+      localStorage.removeItem('user');
       router.push('/login');
     } catch (err: any) {
       setDeleteError(err?.response?.data?.message || 'Failed to delete account. Please try again.');

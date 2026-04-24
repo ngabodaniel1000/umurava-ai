@@ -75,8 +75,10 @@ export function Sidebar({ isCollapsed, onToggle, isMobile }: SidebarProps) {
   const handleLogout = async () => {
     try {
       await api.post('/users/logout');
-      router.push('/login');
     } catch (err) {
+      console.error('Logout failed');
+    } finally {
+      localStorage.removeItem('user');
       router.push('/login');
     }
   };

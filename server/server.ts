@@ -2,7 +2,6 @@ import express, { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import morgan from 'morgan';
-import cookieParser from 'cookie-parser';
 import connectDB from './config/db';
 
 // Load env vars
@@ -22,7 +21,6 @@ const app = express();
 
 // Body parser
 app.use(express.json());
-app.use(cookieParser());
 
 // setting proxy
 app.set('trust proxy', 1);
@@ -30,9 +28,9 @@ app.set('trust proxy', 1);
 // Enable CORS
 app.use(cors({
     origin: process.env.FRONTEND_URL,
-    credentials: true,
+    credentials: false,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Cookie']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
 }));
 
 // Dev logging middleware
