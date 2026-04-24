@@ -129,7 +129,7 @@ export function Sidebar({ isCollapsed, onToggle, isMobile }: SidebarProps) {
                   className={cn(
                     'w-full h-12 hover:bg-muted transition-all duration-200 cursor-pointer',
                     isCollapsed ? "justify-center px-0" : "justify-start gap-3",
-                    isActive ? 'bg-accent text-accent-foreground hover:bg-accent' : 'text-muted-foreground hover:text-foreground'
+                    isActive ? 'bg-accent text-accent-foreground' : 'text-muted-foreground'
                   )}
                 >
                   <Icon className="w-5 h-5 shrink-0" />

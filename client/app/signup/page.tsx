@@ -170,7 +170,7 @@ export default function SignupPage() {
                 </div>
 
                 <div className="mt-8 text-center text-xs text-muted-foreground">
-                    <p>© 2024 Umurava. All rights reserved.</p>
+                    <p>© {new Date().getFullYear()} {" "} Umurava AI. All rights reserved.</p>
                 </div>
             </div>
         </div>

@@ -145,7 +145,7 @@ export default function JobsPage() {
 
                   <div className="flex gap-2 pt-4 border-t border-border">
                     <Link href={`/jobs/${job.id}`} className="flex-1">
-                      <Button variant="outline" className="w-full border-border hover:bg-muted hover:border-accent transition-colors">
+                      <Button variant="outline" className="w-full border-border transition-colors">
                         View
                       </Button>
                     </Link>

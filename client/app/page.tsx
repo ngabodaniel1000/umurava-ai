@@ -316,7 +316,7 @@ export default function HomePage() {
           </div>
           <div className="border-t border-border pt-8">
             <p className="text-center text-sm text-muted-foreground">
-              © 2024 Umurava. All rights reserved.
+              © {new Date().getFullYear()} {" "}Umurava AI. All rights reserved.
             </p>
           </div>
         </div>
