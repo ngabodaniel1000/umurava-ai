@@ -48,50 +48,45 @@ interface ScreeningData {
 const recommendationConfig = {
   'Highly Recommended': {
     icon: Trophy,
-    color: 'text-yellow-400',
-    bg: 'bg-yellow-400/10 border-yellow-400/30',
-    badge: 'bg-yellow-400/20 text-yellow-300',
-    bar: 'from-yellow-400 to-orange-400',
+    color: 'text-green-500',
+    bg: 'bg-card border-border',
+    badge: 'bg-green-500/10 text-green-500',
   },
   Recommended: {
     icon: CheckCircle,
-    color: 'text-green-400',
-    bg: 'bg-green-500/10 border-green-500/30',
-    badge: 'bg-green-500/20 text-green-300',
-    bar: 'from-green-400 to-emerald-500',
+    color: 'text-green-500',
+    bg: 'bg-card border-border',
+    badge: 'bg-green-500/10 text-green-500',
   },
   Consider: {
     icon: AlertCircle,
-    color: 'text-blue-400',
-    bg: 'bg-blue-500/10 border-blue-500/30',
-    badge: 'bg-blue-500/20 text-blue-300',
-    bar: 'from-blue-400 to-cyan-500',
+    color: 'text-blue-500',
+    bg: 'bg-card border-border',
+    badge: 'bg-blue-500/10 text-blue-500',
   },
   Borderline: {
     icon: XCircle,
-    color: 'text-amber-400',
-    bg: 'bg-amber-500/10 border-amber-500/30',
-    badge: 'bg-amber-500/20 text-amber-300',
-    bar: 'from-amber-400 to-orange-400',
+    color: 'text-muted-foreground',
+    bg: 'bg-card border-border',
+    badge: 'bg-muted text-muted-foreground',
   },
 };
 
 function ScoreRing({ score }: { score: number }) {
   const circumference = 2 * Math.PI * 36;
   const offset = circumference - (score / 100) * circumference;
+  // Use green for high scores, blue for medium, muted for low
   const color =
     score >= 80
-      ? '#facc15'
+      ? '#22c55e' // Green for excellent
       : score >= 65
-        ? '#4ade80'
-        : score >= 50
-          ? '#60a5fa'
-          : '#fb923c';
+        ? '#3b82f6' // Blue for good
+        : '#64748b'; // Muted for needs improvement
 
   return (
     <div className="relative w-20 h-20 flex-shrink-0">
       <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
-        <circle cx="40" cy="40" r="36" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="7" />
+        <circle cx="40" cy="40" r="36" fill="none" className="stroke-muted" strokeWidth="7" />
         <circle
           cx="40"
           cy="40"
@@ -106,7 +101,7 @@ function ScoreRing({ score }: { score: number }) {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-lg font-bold text-white leading-none">{score}</span>
+        <span className="text-lg font-bold text-foreground leading-none">{score}</span>
         <span className="text-[9px] text-muted-foreground leading-none mt-0.5">/ 100</span>
       </div>
     </div>
@@ -127,7 +122,7 @@ function CandidateCard({
 
   return (
     <Card
-      className={`border transition-all duration-300 ${cfg.bg} ${isExpanded ? 'shadow-lg' : 'hover:shadow-md'}`}
+      className={`bg-card border-border transition-all duration-300 ${isExpanded ? 'shadow-lg' : 'hover:shadow-md'}`}
     >
       {/* Header row */}
       <button
@@ -136,7 +131,7 @@ function CandidateCard({
         aria-expanded={isExpanded}
       >
         {/* Rank badge */}
-        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-background/40 border border-border flex items-center justify-center">
+        <div className="flex-shrink-0 w-9 h-9 rounded-full bg-muted border border-border flex items-center justify-center">
           <span className="text-sm font-bold text-foreground">#{candidate.rank}</span>
         </div>
 
@@ -162,25 +157,25 @@ function CandidateCard({
 
       {/* Expandable details */}
       {isExpanded && (
-        <div className="px-5 pb-5 space-y-4 border-t border-border/40 pt-4">
+        <div className="px-5 pb-5 space-y-4 border-t border-border pt-4">
           {/* Reasoning */}
           <div>
-            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1.5 font-semibold">
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-1.5 ">
               AI Reasoning
             </p>
-            <p className="text-sm text-foreground leading-relaxed">{candidate.reasoning}</p>
+            <p className="text-sm text-foreground/80 leading-relaxed">{candidate.reasoning}</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Strengths */}
             <div>
-              <p className="text-xs uppercase tracking-widest text-green-400 mb-2 font-semibold flex items-center gap-1">
+              <p className="text-xs uppercase tracking-widest text-green-500 mb-2 font-bold flex items-center gap-1">
                 <CheckCircle className="w-3 h-3" /> Strengths
               </p>
               <ul className="space-y-1.5">
                 {candidate.strengths.map((s, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-foreground">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-400 mt-1.5 flex-shrink-0" />
+                  <li key={i} className="flex items-start gap-2 text-sm text-foreground/80">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0" />
                     {s}
                   </li>
                 ))}
@@ -189,14 +184,14 @@ function CandidateCard({
 
             {/* Gaps */}
             <div>
-              <p className="text-xs uppercase tracking-widest text-amber-400 mb-2 font-semibold flex items-center gap-1">
+              <p className="text-xs uppercase tracking-widest text-blue-500 mb-2 font-bold flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" /> Gaps / Risks
               </p>
               {candidate.gaps.length > 0 ? (
                 <ul className="space-y-1.5">
                   {candidate.gaps.map((g, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-foreground">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1.5 flex-shrink-0" />
+                    <li key={i} className="flex items-start gap-2 text-sm text-foreground/80">
+                      <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
                       {g}
                     </li>
                   ))}
@@ -366,7 +361,7 @@ export default function AIScreeningPage() {
                 <ArrowLeft className="w-4 h-4" /> Back to Job
               </Button>
               <h1 className="text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
-                <Brain className="w-7 h-7 text-accent" /> AI Screening Results
+                <Brain className="w-7 h-7 text-green-500" /> AI Screening Results
               </h1>
               <p className="text-muted-foreground mt-1 text-sm">
                 {screeningData.jobTitle} — {new Date(screeningData.screeningDate).toLocaleDateString()}
@@ -406,55 +401,57 @@ export default function AIScreeningPage() {
                 icon: Users,
                 label: 'Candidates Analyzed',
                 value: screeningData.totalCandidatesAnalyzed,
-                color: 'text-blue-400',
-                bg: 'bg-blue-400/10',
+                color: 'text-blue-500',
+                bg: 'bg-blue-500/10',
               },
               {
                 icon: Trophy,
                 label: 'Shortlisted',
                 value: screeningData.shortlistCount,
-                color: 'text-yellow-400',
-                bg: 'bg-yellow-400/10',
+                color: 'text-green-500',
+                bg: 'bg-green-500/10',
               },
               {
                 icon: Star,
                 label: 'Top Score',
                 value: `${topCandidate?.matchScore ?? 0}`,
-                color: 'text-green-400',
-                bg: 'bg-green-400/10',
+                color: 'text-green-500',
+                bg: 'bg-green-500/10',
               },
               {
                 icon: TrendingUp,
                 label: 'Avg Score',
                 value: `${avgScore}`,
-                color: 'text-accent',
-                bg: 'bg-accent/10',
+                color: 'text-blue-500',
+                bg: 'bg-blue-500/10',
               },
             ].map((stat) => (
-              <Card key={stat.label} className={`p-5 border-border ${stat.bg} border`}>
+              <Card key={stat.label} className="p-5 border-border bg-card rounded-xl border">
                 <div className={`w-9 h-9 rounded-lg ${stat.bg} flex items-center justify-center mb-3`}>
                   <stat.icon className={`w-5 h-5 ${stat.color}`} />
                 </div>
                 <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
+                <p className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mt-1">{stat.label}</p>
               </Card>
             ))}
           </div>
 
           {/* Disclaimer */}
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-accent/5 border border-accent/20">
-            <Sparkles className="w-5 h-5 text-accent mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              <span className="text-foreground font-semibold">Human-in-the-Loop:</span> These AI rankings
-              are meant to augment, not replace, recruiter judgment. Final hiring decisions remain entirely
-              with your team.
-            </p>
+          <div className="flex items-start gap-4 p-5 rounded-2xl bg-green-500/5 border border-green-500/20">
+            <Sparkles className="w-6 h-6 text-green-500 mt-0.5 flex-shrink-0" />
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-foreground">AI-Powered Shortlist</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                These rankings are generated by Gemini AI based on candidate profiles and job requirements.
+                Recruiters should review the reasoning and strengths for each candidate before making a final decision.
+              </p>
+            </div>
           </div>
 
           {/* Shortlist */}
           <div>
             <h2 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-              <Target className="w-5 h-5 text-accent" /> Ranked Shortlist
+              <Target className="w-5 h-5 text-green-500" /> Ranked Shortlist
             </h2>
             <div className="space-y-3">
               {screeningData.shortlist.map((candidate) => (
@@ -566,23 +563,23 @@ export default function AIScreeningPage() {
 
             <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground bg-muted/50 rounded-lg p-4 border border-border">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-accent" />
+                <span className="w-2 h-2 rounded-full bg-green-500" />
                 Skills Match — <span className="text-foreground font-semibold">25%</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-green-400" />
+                <span className="w-2 h-2 rounded-full bg-blue-500" />
                 Work Experience — <span className="text-foreground font-semibold">30%</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-blue-400" />
+                <span className="w-2 h-2 rounded-full bg-green-500" />
                 Education & Certs — <span className="text-foreground font-semibold">20%</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-purple-400" />
+                <span className="w-2 h-2 rounded-full bg-blue-500" />
                 Projects — <span className="text-foreground font-semibold">15%</span>
               </div>
               <div className="flex items-center gap-2 col-span-2">
-                <span className="w-2 h-2 rounded-full bg-amber-400" />
+                <span className="w-2 h-2 rounded-full bg-green-500" />
                 Availability & Location — <span className="text-foreground font-semibold">10%</span>
               </div>
             </div>
@@ -613,7 +610,7 @@ export default function AIScreeningPage() {
             </div>
             <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
               <div
-                className="h-2 bg-gradient-to-r from-accent to-purple-500 rounded-full transition-all duration-700"
+                className="h-2 bg-gradient-to-r from-green-500 to-blue-500 rounded-full transition-all duration-700"
                 style={{ width: `${progress}%` }}
               />
             </div>
